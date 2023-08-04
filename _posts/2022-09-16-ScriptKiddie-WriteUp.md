@@ -2,7 +2,7 @@
 title: ScriptKiddie WriteUp
 date: 2022-09-16 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [linux,cve-2020-7384]     # TAG names should always be lowercase
+tags: [cve-2020-7384]     # TAG names should always be lowercase
 image: /photos/2022-09-16-ScriptKiddie-WriteUp/htb.jpg
 ---
 

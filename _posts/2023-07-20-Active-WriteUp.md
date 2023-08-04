@@ -2,7 +2,7 @@
 title: Active WriteUp
 date: 2023-07-20 12:00:00 +/-TTTT
 categories: [HTB, Active Directory]
-tags: [kerberoasting, active directory, gpp-password, gpp-decrypt, crackmapexec, smbmap, smbclient, getuserspns.py, john, wmiexec.py]     # TAG names should always be lowercase
+tags: [kerberoasting, gpp-password, gpp-decrypt, crackmapexec, smbmap, smbclient, getuserspns.py, john, wmiexec.py]     # TAG names should always be lowercase
 image: active.png
 img_path: /photos/2023-07-20-Active-WriteUp/
 ---

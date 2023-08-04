@@ -2,7 +2,7 @@
 title: Soccer WriteUp
 date: 2023-01-02 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [webshell,php,websockets,sqli blind, htb,linux]     # TAG names should always be lowercase
+tags: [webshell,php,websockets,sqli blind, htb]     # TAG names should always be lowercase
 image: /htb.jpg
 img_path: /photos/2023-01-02-Soccer-WriteUp/
 ---

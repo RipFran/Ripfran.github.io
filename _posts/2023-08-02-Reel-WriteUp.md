@@ -2,7 +2,7 @@
 title: Reel WriteUp
 date: 2023-08-02 00:00:00 +/-TTTT
 categories: [HTB, Active Directory]
-tags: [ftp, smtp, exiftool, cve-2017-0199, phising, rtf, hta, smbserver, msfvenom, swaks, acl, pscredential, writeowner, writedacl, active directory]     # TAG names should always be lowercase
+tags: [ftp, smtp, exiftool, cve-2017-0199, phising, rtf, hta, smbserver, msfvenom, swaks, acl, pscredential, writeowner, writedacl]     # TAG names should always be lowercase
 image: reel.png
 img_path: /photos/2023-08-02-Reel-WriteUp/
 ---

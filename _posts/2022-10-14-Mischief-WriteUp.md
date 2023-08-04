@@ -2,7 +2,7 @@
 title: Mischief WriteUp
 date: 2022-10-14 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [linux,insane,snmp,ipv6,iptables, icmp exfiltration]     # TAG names should always be lowercase
+tags: [insane,snmp,ipv6,iptables, icmp exfiltration]     # TAG names should always be lowercase
 image: /photos/2022-10-14-Mischief-WriteUp/htb.jpg
 ---
 

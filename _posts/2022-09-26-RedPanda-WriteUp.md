@@ -2,7 +2,7 @@
 title: RedPanda WriteUp
 date: 2022-09-26 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [linux,java ssti,xxe]     # TAG names should always be lowercase
+tags: [java ssti,xxe]     # TAG names should always be lowercase
 image: /photos/2022-09-26-RedPanda-WriteUp/htb.jpg
 ---
 

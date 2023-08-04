@@ -2,7 +2,7 @@
 title: Forest WriteUp
 date: 2023-07-16 16:00:00 +/-TTTT
 categories: [HTB, Active Directory]
-tags: [asreproasting, bloodhound, dcsync, pass the hash, active directory, crackmapexec, smbclient, smbmap, rpcclient, getnpusers.py, kerbrute, john, evil-winrm, account operators, sharphound.exe, genericall, writedacl]     # TAG names should always be lowercase
+tags: [asreproasting, bloodhound, dcsync, pass the hash, crackmapexec, smbclient, smbmap, rpcclient, getnpusers.py, kerbrute, john, evil-winrm, account operators, sharphound.exe, genericall, writedacl]     # TAG names should always be lowercase
 image: forest.png
 img_path: /photos/2023-07-16-Forest-WriteUp/
 ---

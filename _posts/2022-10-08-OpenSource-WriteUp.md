@@ -2,7 +2,7 @@
 title: OpenSource WriteUp
 date: 2022-10-08 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [linux,python,gitea,git hooks, werkzeug, lfi]     # TAG names should always be lowercase
+tags: [python,gitea,git hooks, werkzeug, lfi]     # TAG names should always be lowercase
 image: /photos/2022-10-08-OpenSource-WriteUp/htb.jpg
 ---
 

@@ -2,7 +2,7 @@
 title: Shared WriteUp
 date: 2022-09-30 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [linux,sqli,cve-2022-21699,cve-2022-0543]     # TAG names should always be lowercase
+tags: [sqli,cve-2022-21699,cve-2022-0543]     # TAG names should always be lowercase
 image: /photos/2022-09-30-Shared-WriteUp/htb.jpg
 ---
 

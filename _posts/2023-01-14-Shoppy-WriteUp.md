@@ -2,7 +2,7 @@
 title: Shoppy WriteUp
 date: 2023-01-14 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: ['nosqli','docker','sudoers']     # TAG names should always be lowercase
+tags: [nosqli,docker,sudoers]     # TAG names should always be lowercase
 image: shoppy.jpg
 img_path: /photos/2023-01-14-Shoppy-WriteUp/
 ---
