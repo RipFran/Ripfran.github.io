@@ -2,7 +2,7 @@
 title: Ambassador WriteUp
 date: 2023-01-28 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [consul,git,grafana,sqlite]     # TAG names should always be lowercase
+tags: [consul,git,grafana,sqlite]     ## TAG names should always be lowercase
 image: ambassador.jpg
 img_path: /photos/2023-01-28-Ambassador-WriteUp/
 ---
@@ -10,7 +10,7 @@ img_path: /photos/2023-01-28-Ambassador-WriteUp/
 ***Ambassador*** es una máquina ***Linux*** con cuatro servicios expuestos: *SSH*, *Grafana*, *MySQL* y un servidor web *HTTP*. Primeramente, explotaremos una **vulnerabilidad** asociada a ***Grafana*** que nos permitirá **leer archivos internos de la máquina**, pudiendo así obtener las credenciales del usuario *grafana*. En una base de datos de ***MySQL*** encontraremos otras credenciales pertenecientes al usuario *develper*, con las que nos podremos conectar por ***SSH***. Finalmente, para conseguir **máximos privilegios**, explotaremos una vulnerabilidad asociada a la herramienta ***Consul***, a través de la cual conseguiremos ejecutar comandos como ***root***.
 
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -23,9 +23,9 @@ img_path: /photos/2023-01-28-Ambassador-WriteUp/
     </tr>
 </table>
 
-# Reconocimiento
+## Reconocimiento
 
-## ping 
+### ping 
 
 Vamos a enviar un _ping_ a la máquina víctima con la finalidad de conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_ y un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -41,7 +41,7 @@ rtt min/avg/max/mdev = 104.906/104.906/104.906/0.000 ms
 
 Vemos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port discovery
+### Port discovery
 
 Procedemos ahora a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo haremos con la herramienta ***nmap***.
 
@@ -150,9 +150,9 @@ PORT     STATE SERVICE VERSION
 
 Al no disponer de credenciales para autenticarnos por *SSH*, **empezaremos** auditando el **puerto 80**.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
-### Tecnologías utilizadas
+#### Tecnologías utilizadas
 
 Utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web:
 
@@ -163,7 +163,7 @@ http://10.10.11.183 [200 OK] Apache[2.4.41], Country[RESERVED][ZZ], HTML5, HTTPS
 
 Está empleando como servidor web _Apache 2.4.41_. El título de la página es *Ambassador Development Server*.
 
-### Análisis de la web
+#### Análisis de la web
 
 La página principal tiene el siguiente aspecto:
 
@@ -171,7 +171,7 @@ La página principal tiene el siguiente aspecto:
 
 Si pinchamos en el post, descubriremos la existencia de un usuario llamado *developer*. No encontraremos nada más interesante. Aplicaremos ***fuzzing*** para descubrir directorios.
 
-### Fuzzing de directorios
+#### Fuzzing de directorios
 
 Vamos a **buscar directorios** que se encuentren bajo la URL `htpp://10.10.11.183/`. Lo haremos con la herramienta *gobuster*:
 
@@ -204,9 +204,9 @@ by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
 
 Nos encuentra diversos directorios, que podemos explorar uno a uno, aunque una vez más no encontraremos nada relevante en ellos. Pasamos a auditar el servicio que corre en el **puerto 3000**.
 
-## Puerto 3000 abierto (HTTP)
+### Puerto 3000 abierto (HTTP)
 
-### Tecnologías utilizadas 
+#### Tecnologías utilizadas 
 
 Lanzaremos ***whatweb*** para cerciorarnos que el servicio que corre en el puerto 3000 es una página web y para saber las tecnologías que está utilizando.
 
@@ -218,7 +218,7 @@ http://10.10.11.183:3000/login [200 OK] Country[RESERVED][ZZ], Grafana[8.2.0], H
 
 Se trata de ***Grafana 8.2.0***. A grandes rasgos, ***Grafana*** es una herramienta de visualización de datos *open source* que permite crear paneles y gráficos personalizados para mostrar información en tiempo real. 
 
-### Analizando Grafana 8.2.0
+#### Analizando Grafana 8.2.0
 
 Al escribir `http://10.10.11.183:3000` en la barra de búsqueda, el navegador nos redirige a `http://10.10.11.183:3000/login`:
 
@@ -232,9 +232,9 @@ Como disponemos de la **versión**, podemos buscar ***exploits*** asociados a es
 
 Aunque la versión de *Grafana* que estamos auditando es la *8.2.0*, el *exploit* *Grafana 8.3.0 - Directory Traversal and Arbitrary File Read* nos puede interesar, ya que se trata de una vulnerabilidad más reciente. 
 
-# Shell como developer 
+## Shell como developer 
 
-## Grafana 8.3.0 - Directory Traversal and Arbitrary File Read
+### Grafana 8.3.0 - Directory Traversal and Arbitrary File Read
 
 Nos podemos bajar el *exploit* con el comando `searchsploit -m multiple/webapps/50581.py`.
 
@@ -328,7 +328,7 @@ El archivo descargado tiene el siguiente formato:
 grafana.db: SQLite 3.x database, last written using SQLite version 3035004
 ```
 
-## Inspeccionando base de datos 
+### Inspeccionando base de datos 
 
 Para interactuar con la base de datos *SQLite* emplearemos la herramienta *SQLite3*. A continuación se presentan algunos comandos básicos de *SQLite3*:
 
@@ -439,7 +439,7 @@ CREATE INDEX `IDX_data_source_org_id_is_default` ON `data_source` (`org_id`,`is_
 
 Parece que los datos están relacionados con el servicio *MySQL*. Tenemos las credenciales *grafana:dontStandSoCloseToMe63221!*.
 
-## Puerto 3306 abierto (MySQL)
+### Puerto 3306 abierto (MySQL)
 
 Podemos emplear las credenciales anteriores para autenticarnos por *MySQL*. El comando que ingresaremos será:
 
@@ -495,7 +495,7 @@ echo "YW5FbmdsaXNoTWFuSW5OZXdZb3JrMDI3NDY4Cg==" | base64 -d
 
 Obtenemos *anEnglishManInNewYork027468*. Ahora nos podemos autenticar por ***SSH*** con esas credenciales.
 
-## user.txt
+### user.txt
 
 Encontraremos la primera *flag* en el *homedir* del usuario *developer*:
 
@@ -506,11 +506,11 @@ Encontraremos la primera *flag* en el *homedir* del usuario *developer*:
 aaa9ba53194fe9f7d66a4e25699826fd
 ```
 
-# Consiguiendo shell como root 
+## Consiguiendo shell como root 
 
-## Reconocimiento del sistema como developer
+### Reconocimiento del sistema como developer
 
-### Análisis de conexiones abiertas en escucha
+#### Análisis de conexiones abiertas en escucha
 
 Con el comando `netstat -auntp` listaremos las conexiones TCP/UDP establecidas y en escucha:
 
@@ -544,7 +544,7 @@ Nos interesan las que tienen estado *LISTEN*, ya que son los servicios que está
 
 Podemos interactuar con la herramienta a través del comando *consul* o enviando peticiones web al puerto **8500**. Ahora bien, para hacerlo, se suele necesitar un ***token de autenticación***. Por ejemplo, si ejecutamos sin autenticación `consul members` para mostrar la lista de miembros de un *cluster* de *consul*, no obtendremos información. En este punto, vamos a aplicar más reconocimiento en busca del *token* o de vías alternativas de escalada de privilegios.
 
-### Reconocimiento del sistema con LinPEAS
+#### Reconocimiento del sistema con LinPEAS
 
 [LinPEAS](https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS) automatiza la recolección de información del sistema, como el uso de recursos, configuraciones de red, servicios en ejecución, permisos de archivos y procesos, y mucho más. 
 
@@ -577,9 +577,9 @@ index 35c08f6..fc51ec0 100755
 --- a/whackywidget/put-config-in-consul.sh
 +++ b/whackywidget/put-config-in-consul.sh
 @@ -1,4 +1,4 @@
- # We use Consul for application config in production, this script will help set the correct values for the app
--# Export MYSQL_PASSWORD before running
-+# Export MYSQL_PASSWORD and CONSUL_HTTP_TOKEN before running
+ ## We use Consul for application config in production, this script will help set the correct values for the app
+-## Export MYSQL_PASSWORD before running
++## Export MYSQL_PASSWORD and CONSUL_HTTP_TOKEN before running
  
 -consul kv put --token bb03b43b-1d81-d62b-24b5-39540ee469b5 whackywidget/db/mysql_pw $MYSQL_PASSWORD
 +consul kv put whackywidget/db/mysql_pw $MYSQL_PASSWORD
@@ -597,7 +597,7 @@ ambassador  127.0.0.1:8301  alive   server  1.13.2  2         dc1  default    <a
 
 En este caso, se muestra un solo nodo con el nombre *ambassador* que se encuentra en la dirección IP *127.0.0.1* y el puerto *8301* y su estado es *alive*.
 
-## Consul RCE via Services API
+### Consul RCE via Services API
 
 Investigando en Internet alguna vía de escalada de privilegios a través de *Consul*, encuentro un [exploit](https://github.com/owalid/consul-rce) que explota una vulnerabilidad de **inyección de comandos en *Consul Api Services***. 
 
@@ -705,16 +705,16 @@ Finalmente, ejecutaremos `bash -p`:
 
 ```bash
 developer@ambassador:/tmp$ bash -p 
-bash-5.0# whoami
+bash-5.0## whoami
 root
 ```
 
-## root.txt
+### root.txt
 
 Encontraremos el segunda *flag* en el *homedir* de *root*:
 
 ```bash
-bash-5.0# cat root.txt 
+bash-5.0## cat root.txt 
 137b1ee6091b1bf563244dacef5e3173
 ```
 

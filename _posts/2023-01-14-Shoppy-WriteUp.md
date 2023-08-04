@@ -2,7 +2,7 @@
 title: Shoppy WriteUp
 date: 2023-01-14 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [nosqli,docker,sudoers]     # TAG names should always be lowercase
+tags: [nosqli,docker,sudoers]     ## TAG names should always be lowercase
 image: shoppy.jpg
 img_path: /photos/2023-01-14-Shoppy-WriteUp/
 ---
@@ -10,7 +10,7 @@ img_path: /photos/2023-01-14-Shoppy-WriteUp/
 ***Shoppy*** es una máquina *Linux* en la que primeramente explotaremos un ***NoSQL injection*** para bypassear un panel de *login*. A continuación, encontraremos unas **credenciales** que nos servirán para autenticarnos en otro panel de inicio de sesión. Nos conectaremos por **SSH** con un usuario y una contraseña que localizaremos en esta web. Para escalar a root, primero pivotaremos al usuario *deploy* gracias a un **privilegio** que tenemos asignado a nivel de ***sudoers*** y finalmente nos aprovecharemos de que este usuario forma parte del grupo ***docker*** para conseguir **máximos privilegios**.
 
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -23,9 +23,9 @@ img_path: /photos/2023-01-14-Shoppy-WriteUp/
     </tr>
 </table>
 
-# Reconocimiento
+## Reconocimiento
 
-## ping
+### ping
 
 En primer lugar  enviaremos un _ping_ a la máquina víctima para conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_. Por otra parte, un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -41,7 +41,7 @@ rtt min/avg/max/mdev = 103.514/103.514/103.514/0.000 ms
 
 Vemos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port discovery
+### Port discovery
 
 Procedemos ahora a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo haremos con la herramienta ***nmap***.
 
@@ -116,7 +116,7 @@ PORT     STATE SERVICE  VERSION
 
 El puerto **22** es **SSH**, el puerto **80** **HTTP** y el **9093** puede que sea **copycat** (no es seguro, _nmap_ pone un interrogante). De momento, como no disponemos de credenciales para autenticarnos port _SSH_, nos centraremos en auditar los puertos **80** y **9093**.
 
-## Puerto 9093 abierto (Prometheus)
+### Puerto 9093 abierto (Prometheus)
 
 Cuando accedemos a http://10.10.11.180:9093, nos encontramos con la siguiente información:
 
@@ -126,11 +126,11 @@ Estas son métricas exportadas por una aplicación ***Go*** usando ***Prometheus
 
 No vamos a encontrar **nada interesante** en este puerto de momento.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
 Gracias a los _scripts_ de reconocimiento que lanza _nmap_, nos damos cuenta que el servicio web que corre en el puerto **80** nos redirige al dominio **shoppy.htb**. Para que nuestra máquina pueda resolver a este dominio deberemos añadirlo al final de nuestro _/etc/hosts_, de la forma:  `10.10.11.180 shoppy.htb`
 
-### Tecnologías utilizadas
+#### Tecnologías utilizadas
 
 Primero utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -142,7 +142,7 @@ http://shoppy.htb [200 OK] Country[RESERVED][ZZ], HTML5, HTTPServer[nginx/1.23.1
 
 Hace el redireccionamiento que ya sabíamos a ***shoppy.htb***. La web está utilizando como servidor *nginx 1.23.1*.
 
-### Fuzzing de directorios
+#### Fuzzing de directorios
 
 Como en la página principal de *shoppy.htb* no encontramos nada interesante, vamos a **buscar directorios** que se encuentren bajo este dominio.
 
@@ -184,7 +184,7 @@ Como no disponemos de credenciales válidas, podríamos probar a autenticarnos c
 
 Antes de explotar algún tipo de **inyección SQL** para intentar *bypassear* el **panel de login** vamos a buscar **subdominios**.
 
-### Fuzzing de subdominios
+#### Fuzzing de subdominios
 
 Lanzaremos la herramienta **_wfuzz_** para encontrar **subdominios**:
 
@@ -228,11 +228,11 @@ Podríamos probar a autenticarnos con credenciales por defecto, pero **tampoco c
 
 En este punto, en el que ya hemos investigado los servicios que corren en todos los puertos, vamos a empezar auditando el panel de ***login*** encontrado en http://shoppy.htb/login.
 
-# Shell como jaeger
+## Shell como jaeger
 
-## NoSQL Injection en http://shoppy.htb/login
+### NoSQL Injection en http://shoppy.htb/login
 
-### Detección
+#### Detección
 
 El primer paso es **detectar** si el panel de *login* es vulnerable a *SQL Injection*. Para ello, podemos introducir caracteres especiales para ver como responde la página web. Por ejemplo, podemos probar con los siguientes payloads:
 
@@ -258,7 +258,7 @@ Según el artículo, para detectar si una web es **vulnerable**, si utilizamos c
 
 Y nos devuelve una respuesta del tipo *500*, la web puede ser susceptible a *NoSQL inyection.* Efectivamente, con la `'` nos devuelve un código *504*.
 
-### Explotación
+#### Explotación
 
 Uno de los *payloads* que nos presenta el artículo anterior para poder explotar esta vulnerabilidad es:
 
@@ -305,7 +305,7 @@ Teniendo en cuenta la *query* anterior, el resultado de la ejecución sería:
 4. Cierto
 ```
 
-## Investigando panel de administración de shoppy.htb
+### Investigando panel de administración de shoppy.htb
 
 El panel de administración tiene el siguiente aspecto:
 
@@ -367,7 +367,7 @@ Session completed
 
 Podemos emplear estas credenciales para autenticarnos en el portal y ver si hay algo diferente, pero no encontraremos nada interesante. También podemos usarlas para autenticarnos por SSH, pero tampoco podremos. Recordemos que hay otro **panel de login** en http://mattermost.shoppy.htb. 
 
-## Investigando mattermost.shoppy.htb
+### Investigando mattermost.shoppy.htb
 
 Con las credenciales ***josh:remembermethisway*** conseguiremos acceder. Una vez dentro, vemos lo siguiente:
 
@@ -379,7 +379,7 @@ A la izquierda tenemos diversos chats. En *deploy machine* encontraremos:
 
 Credenciales ***jaeger:Sh0ppyBest@pp!***. Podremos **acceder por SSH** con este usuario y esta contraseña.
 
-## user.txt
+### user.txt
 
 Encontraremos la primera *flag* en el *homedir* de *jaeger*:
 
@@ -388,11 +388,11 @@ jaeger@shoppy:~$ cat user.txt
 cf8a42ff88e2990140e63b628c5b3a6f
 ```
 
-# Shell como deploy
+## Shell como deploy
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### sudoers
+#### sudoers
 
 Para listar los privilegios de ***sudo*** asignados al usuario *jaeger* utilizaremos el comando `sudo -l`:
 
@@ -411,7 +411,7 @@ Podemos ejecutar como el usuario *deploy* el binario *password-manager*, que se 
 sudo -u deploy /home/deploy/password-manager
 ```
 
-### Inspeccionado binario password-manager
+#### Inspeccionado binario password-manager
 
 Cuando lo ejecutamos nos pide una contraseña:
 
@@ -459,7 +459,7 @@ A continuación lo abrimos con ***ghidra***, que es una herramienta para inspecc
 
 Podemos ver la cadena ***Sample***.
 
-### Credenciales de deploy 
+#### Credenciales de deploy 
 
 Si introducimos como contraseña ***Sample***:
 
@@ -475,11 +475,11 @@ password: Deploying@pp!
 
 Credenciales ***deploy:Deploying@pp!***. Con `su deploy` y posteriormente `Deploying@pp!`, pivotaremos a este usuario.
 
-# Shell como root
+## Shell como root
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### Grupos de deploy
+#### Grupos de deploy
 
 Para visualizar los grupos asignados a *deploy*, podemos utilizar el comando `id`:
 
@@ -490,7 +490,7 @@ uid=1001(deploy) gid=1001(deploy) groups=1001(deploy),998(docker)
 
 Formamos parte del grupo ***Docker***. Formando parte de este grupo, existe una manera de montar la raíz del sistema en un contenedor, teniendo así acceso a toda la máquina como *root*.
 
-### Explotación grupo Docker
+#### Explotación grupo Docker
 
 En [GTFObins](https://gtfobins.github.io/gtfobins/docker/#shell) tenemos una forma de *spawnearnos* una shell como *root*:
 
@@ -510,12 +510,12 @@ Sí que está descargada. Corriendo el comando anterior, seriamos *root* en un c
 
 Como estamos en un contenedor, podemos **modificar los permisos** de la *bash* con `chmod u+s /bin/bash` para que luego al salirnos del contenedor podamos continuar teniendo acceso a la máquina como *root*. Ahora ya nos podemos salir y simplemente haciendo `bash -p` seríamos *root*.
 
-## root.txt
+### root.txt
 
 Podemos encontrar la última *flag* en el *homedir* de *root*:
 
 ```bash
-bash-5.1# cat /root/root.txt 
+bash-5.1## cat /root/root.txt 
 5ba5267e7361bcee645f5e7733d931f2
 ```
 

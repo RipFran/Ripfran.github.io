@@ -2,13 +2,13 @@
 title: Shared WriteUp
 date: 2022-09-30 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [sqli,cve-2022-21699,cve-2022-0543]     # TAG names should always be lowercase
+tags: [sqli,cve-2022-21699,cve-2022-0543]     ## TAG names should always be lowercase
 image: /photos/2022-09-30-Shared-WriteUp/htb.jpg
 ---
 
 **Shared** es una máquina ***Linux*** en la que explotaremos un **SQL injection** para conseguir las credenciales de un usuario llamado james_mason. Posteriormente, pivotaremos al usuario dan_smith explotando una **vulnerabilidad** ligada a una herramienta llamada ***ipython*** que corre el usuario *dan_smith* a intervalos regulares de tiempo. Finalmente, para convertirnos al usuario *root* explotaremos un **RCE** en el servicio ***Redis***, que nos permitirá ejecutar comandos como *root*, ya que es el que está corriendo el servicio.
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -21,9 +21,9 @@ image: /photos/2022-09-30-Shared-WriteUp/htb.jpg
     </tr>
 </table>
 
-#  Reconocimiento  
+##  Reconocimiento  
 
-## ping  
+### ping  
 
 Primero enviaremos un *ping* a la máquina victima para saber su sistema operativo y si tenemos conexión con ella. Un *TTL* menor o igual a 64 significa que la máquina es *Linux*. Por otra parte, un *TTL* menor o igual a 128 significa que la máquina es *Windows*.
 
@@ -31,7 +31,7 @@ Primero enviaremos un *ping* a la máquina victima para saber su sistema operati
 
 Vemos que nos enfrentamos a una máquina ***Linux*** ya que su ttl es 63.
  
-## nmap  
+### nmap  
 
 Ahora procedemos a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (*status open*). Lo haremos con la herramienta ```nmap```. 
 
@@ -54,7 +54,7 @@ Ejecutaremos: ```nmap -sCV -p22,80,443 10.10.11.170 -oN targeted```. Obtendremos
 
 El puerto **22** es **SSH** y el puerto **80** y **443** son **HTTP** y **HTTPS**, respectivamente. De momento, como no disponemos de credenciales para autenticarnos contra *SSH*, nos centraremos en auditar los puertos 80 y 443.
 
-## Puertos 80 y 443 abiertos (HTTP y HTTPS)  
+### Puertos 80 y 443 abiertos (HTTP y HTTPS)  
 
 Gracias a los *scripts* de reconocimiento que lanza *nmap*, podemos ver que el servicio web que corre en el puerto 80 nos redirige al dominio ***shared.htb***. Para que nuestra máquina pueda resolver a este dominio deberemos ponerlo en nuestro */etc/hosts*, de la siguiente manera:
 
@@ -72,7 +72,7 @@ Si lanzamos un curl, podremos extraer mas información sobre todas estas redirec
 
 <img src="/photos/2022-09-30-Shared-WriteUp/curl.png" alt="drawing"  />  
 
-### Analizando https://shared.htb 
+#### Analizando https://shared.htb 
 
 Cuando accedemos a la página web vemos lo siguiente:
 
@@ -103,7 +103,7 @@ Nos encuentra dos subdominios; ***www*** que no nos devuelve información (el n�
 
 <img src="/photos/2022-09-30-Shared-WriteUp/etchostssubdomain.png" alt="drawing"  />  
 
-###  Analizando https://checkout.shared.htb/ 
+####  Analizando https://checkout.shared.htb/ 
 
 Si introducimos ***https://checkout.shared.htb/*** en el navegador nos encontraremos con lo siguiente:
 
@@ -131,7 +131,7 @@ Por curiosidad, vuelvo a tirar de ***wfuzz*** para aplicar fuerza bruta sobre es
 
 Por lo visto, aquellas palabras que contengan ***sleep*** o ***benchmark*** provocan este suceso.
 
-## SQL Injection  
+### SQL Injection  
 
 Otro *payload* con el que pruebo es con ```test' order by 100-- -```, con la finalidad de saber el numero de columnas de la tabla que esta utilizando la máquina víctima, pero como no vemos ningún error no obtendremos nada relevante.
 
@@ -169,7 +169,7 @@ Esta tabla tiene 3 columnas: ***id***, ***username*** y ***password***. Nos inte
 
 Obtendremos la siguiente credencial : ```james_mason:fc895d4eddc2fc12f995e18c865cf273```.  
 
-## Rompiendo hash con John The Ripper  
+### Rompiendo hash con John The Ripper  
 
 Parece que la contraseña está *hasheada* en **MD5**. Podemos intentar **romper** el ***hash*** con herramientas de fuerza bruta como por ejemplo ***John The Ripper***. Pero antes, para comprobar que es un hash MD5, podemos utilizar la herramienta *hashid*:
 
@@ -189,9 +189,9 @@ Ahora lo que nos interesará será llevar a cabo una **escalada de privilegios**
 
 ##  Consiguiendo shell como dan_smith  
 
-## Reconocimiento del sistema  
+### Reconocimiento del sistema  
 
-### Analizando index.php 
+#### Analizando index.php 
 
 Antes de empezar con el reconocimiento de la máquina, vamos a inspeccionar el ***index.php*** de la web ***https://checkout.shared.htb/*** para entender por que se acontece la ***SQL injection***. El contenido que nos interesa del fichero es el siguiente y lo podemos encontrar en la ruta */var/www/checkout.shared.htb*:
 
@@ -246,7 +246,7 @@ Podemos ver que de la cookie *custom_cart* coge el campo del producto, llamado *
 
 Además, ya le encontramos sentido a por qué cuando poníamos palabras que contenían las cadenas ***sleep*** o ***benchmark*** nos devolvían un resultado diferente. 
 
-### Grupos de james_mason 
+#### Grupos de james_mason 
 
 Vemos que ***james_mason*** pertenece a un grupo interesante llamado ***developer***.
 
@@ -262,7 +262,7 @@ james_mason@shared:/home/dan_smith$ find / -group developer 2>/dev/null -ls
     46286      4 drwxrwx---   2 root     developer     4096 Sep 30 08:47 /opt/scripts_review
 ```
 
-### Puertos abiertos 
+#### Puertos abiertos 
 
 Dejando apartado el punto anterior, si listamos los **puertos abiertos**, nos encontramos con que la máquina esta corriendo internamente el servicio de ***Redis*** (6379) y ***msyql*** (3306).
  
@@ -281,7 +281,7 @@ tcp        0     36 10.10.11.172:22         10.10.14.12:60390       ESTABLISHED 
 tcp6       0      0 :::22                   :::*                    LISTEN      -       
 ```
 
-### Servicio SQL 
+#### Servicio SQL 
 
 No tiene mucho sentido conectarse a la base de datos, ya que toda la información que nos interesaba ya la obtuvimos en la inyección SQL. Pero nunca está de mas comprobar que no nos hayamos dejado nada por mirar.
 
@@ -301,7 +301,7 @@ define('DBNAME','checkout');
 En este punto podremos conectarnos con ```mysql u checkout -pa54$K_M4?DdT^HUk``` pero no encontraremos nada de interés.
 
 
-### Redis 
+#### Redis 
 
 Otro servicio que estaba expuesto internamente es ***Redis***. Redis es básicamente un base de datos en memoria. Nos podremos conectar a este con la herramienta ***redis-cli***. Hay veces que sin proveer de credenciales *Redis* te deja listar toda la información, pero este no sera el caso. Con el comando ***info*** veremos que nos pide autenticación. Pero después de probar con diversas credenciales **no me consigo conectar**. La escalada tampoco va por aquí.
 
@@ -319,7 +319,7 @@ NOAUTH Authentication required.
 127.0.0.1:6379> 
 ```
 
-### Reconocimiento del sistema con pspy 
+#### Reconocimiento del sistema con pspy 
 
 ***Pspy*** es una herramienta que nos permite ver que tareas se están ejecutando a intervalos regulares de tiempo y por qué usuarios. Nos la podemos descargar del siguiente [repositorio](https://github.com/DominicBreuker/pspy).  
 
@@ -356,7 +356,7 @@ Y otra también ejecutada por **root** donde vemos que **ejecuta el servicio de 
 
 <img src="/photos/2022-09-30-Shared-WriteUp/redispspy.png" alt="drawing"  /> 
 
-## ipython CVE-2022-21699  
+### ipython CVE-2022-21699  
 
 Según el PoC anterior, al **atacante** deberá de realizar 3 pasos:
 
@@ -413,9 +413,9 @@ También deberemos **ajustar el número de filas y de columnas** de esta *shell*
 
 Ahora vamos a reconocer el sistema como este usuario a ver si como ***dan_smith*** podemos escalar a ***root***.
 
-##  Consiguiendo shell como root  
+## Consiguiendo shell como root  
 
-## Reconocimiento del sistema  
+### Reconocimiento del sistema  
 
 ***dan_smith*** tiene asignada una **clave privada id_rsa**. La podemos utilizar para conectarnos por **ssh** sin proveer la contraseña de de este usuario. ```chmod 600 id_rsa; ssh dan_smith@10.10.11.172 -i id_rsa```
 
@@ -461,7 +461,7 @@ tfJMvuTgb3NhHvUwAAAAtyb290QHNoYXJlZAECAwQFBg==
 -----END OPENSSH PRIVATE KEY-----
 ```
 
-### User flag 
+#### User flag 
 
 Podremos encontrar la ***user flag*** en el *homdedir* de *dan_smith*.
 
@@ -471,7 +471,7 @@ bff8846d33329d00fc02b44171188ada
 ```
 
 
-### Grupos de dan_smith 
+#### Grupos de dan_smith 
 
 Este usuario se encuentra dentro de tres grupos: el suyo propio, *developer*, que ya lo habíamos investigado anteriormente, y ***sysadmin***.
 
@@ -487,7 +487,7 @@ dan_smith@shared:~$ find / -group sysadmin 2>/dev/null -ls
     17914   5836 -rwxr-x---   1 root     sysadmin  5974154 Mar 20  2022 /usr/local/bin/redis_connector_dev
 ```
 
-### Binario redis_connector_dev 
+#### Binario redis_connector_dev 
 
 Cuando ejecutamos el binario este nos devuelve **información sobre el servicio de *Redis***. Recordemos que para conectarnos a *Redis* en la máquina víctima necesitamos **credenciales válidas**. Es posible que cuando ejecutemos el binario estén viajando credenciales para que sea posible poder volcar toda esta información.
 
@@ -496,7 +496,7 @@ dan_smith@shared:~$ /usr/local/bin/redis_connector_dev
 [+] Logging to redis instance using password...
 
 INFO command result:
-# Server
+## Server
 redis_version:6.0.15
 redis_git_sha1:00000000
 redis_git_dirty:0
@@ -546,7 +546,7 @@ Una vez dentro podemos listar las **bases de datos disponibles** con ```info key
 
 ```python
 127.0.0.1:6379> info keyspace
-# Keyspace
+## Keyspace
 ```
 
 Pero **no hay ninguna** disponible. 
@@ -555,7 +555,7 @@ También podemos mirar **vulnerabilidades asociadas** a este servicio. Con un po
 
 [Hacktricks LUA sandbox bypass](https://book.hacktricks.xyz/network-services-pentesting/6379-pentesting-redis#lua-sandbox-bypass) nos comparte un repositorio de github con un *script* que al ejecutarlo nos debería de dar ejecución remota de comandos.
 
-## Redis CVE-2022-0543 
+### Redis CVE-2022-0543 
 
 El *script* es un código en python que he modificado ligeramente. Le he añadido el campo ***password*** con la contraseña de *Redis* para que al ejecutarlo nos podamos autenticar. También he *hardcodeado* la ip y el puerto para que la ejecución sea mas rápida.
 
@@ -622,7 +622,7 @@ Y por último hago un ```bash index.html```
 <img src="/photos/2022-09-30-Shared-WriteUp/roothsell.png" alt="drawing"  />  
 
 ```zsh
-root@shared:/var/lib/redis# cat /root/root.txt
+root@shared:/var/lib/redis## cat /root/root.txt
 cat /root/root.txt
 a453c629bc2e619296163cac66b3fe24
 ```

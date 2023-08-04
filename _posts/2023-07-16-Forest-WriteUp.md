@@ -2,18 +2,18 @@
 title: Forest WriteUp
 date: 2023-07-16 16:00:00 +/-TTTT
 categories: [HTB, Active Directory]
-tags: [asreproasting, bloodhound, dcsync, pass the hash, crackmapexec, smbclient, smbmap, rpcclient, getnpusers.py, kerbrute, john, evil-winrm, account operators, sharphound.exe, genericall, writedacl]     # TAG names should always be lowercase
+tags: [asreproasting, bloodhound, dcsync, pass the hash, crackmapexec, smbclient, smbmap, rpcclient, getnpusers.py, kerbrute, john, evil-winrm, account operators, sharphound.exe, genericall, writedacl]     ## TAG names should always be lowercase
 image: forest.png
 img_path: /photos/2023-07-16-Forest-WriteUp/
 ---
 
 **Forest** es una máquina **Windows** de **dificultad fácil** que pone el foco en la enumeración y explotación de permisos en entornos ***Active Directory***. El inicio de la intrusión se realiza obteniendo las credenciales de un usuario a través de un ataque ***ASREPRoast***. Una vez dentro del sistema, se utiliza ***BloodHound*** para un análisis detallado de la configuración de los grupos de Active Directory. Gracias a la identificación de permisos mal configurados y la aplicación de técnicas de escalada de privilegios, como el ataque ***DCSync*** y el método ***Pass-The-Hash***, se logra obtener los privilegios de **administrador del dominio**. 
 
-# Reconocimiento
+## Reconocimiento
 
 En esta etapa, nos esforzamos por recopilar la mayor cantidad de información posible sobre nuestro objetivo.
 
-## Identificación del Sistema Operativo con Ping
+### Identificación del Sistema Operativo con Ping
 
 Empezamos por realizar un _**ping**_ a la máquina víctima. La finalidad del _ping_ no es solamente confirmar la conectividad, sino también deducir el sistema operativo que la máquina víctima está utilizando. ¿Cómo lo hace? Por medio del _**Time to Live (TTL)**_.
 
@@ -35,7 +35,7 @@ rtt min/avg/max/mdev = 108.867/108.867/108.867/0.000 ms
 Observamos que el _**TTL**_ es 127, lo que sugiere que nos enfrentamos a una máquina **Windows**.
 
   
-## Descubrimiento de puertos
+### Descubrimiento de puertos
 
 El próximo paso en nuestro proceso de exploración es descubrir los puertos abiertos en la máquina víctima. Para ello, utilizamos la herramienta **nmap**. Nmap nos permite identificar los **puertos abiertos** (status open) en la máquina, que podrían ser potenciales vectores de ataque.
 
@@ -167,7 +167,7 @@ El resultado de este escaneo revela información adicional sobre los servicios e
 | 5985, 47001 | WS-Management/WinRM | Estos servicios permiten el acceso remoto a los sistemas de administración. | Las vulnerabilidades o problemas de configuración pueden permitir la ejecución remota de código o la escalada de privilegios. |
 | 9389 | .NET Message Framing | Este puerto se utiliza para la comunicación en el marco de mensajes .NET. | Las vulnerabilidades pueden permitir ataques de inyección de código o la ejecución remota de código. |
 
-## Puertos 139/445 abiertos (SMB)
+### Puertos 139/445 abiertos (SMB)
 
 **El protocolo SMB (Server Message Block)**, que opera a través de los puertos 139 y 445, se selecciona para un reconocimiento inicial por su relevancia en la configuración de redes Windows y su conocido historial de vulnerabilidades explotables.
 
@@ -213,7 +213,7 @@ SMB1 disabled -- no workgroup available
 
 Esto sugiere que el acceso anónimo es factible, pero **no se logra visualizar ningún recurso compartido disponible**. Esto puede indicar que los recursos compartidos están restringidos a determinados usuarios, o simplemente que no existen en la máquina objetivo.
 
-## Puerto 135 abierto (RPC)
+### Puerto 135 abierto (RPC)
 
 **RPC (Remote Procedure Call)** es una tecnología utilizada en los sistemas operativos Windows para permitir que un programa ejecute código de manera remota. En este contexto, el puerto 135 se ha explorado porque ofrece múltiples oportunidades para la **enumeración de recursos del dominio**, incluyendo **usuarios, grupos, políticas** y más.
 
@@ -303,13 +303,13 @@ r1pfr4n@parrot> crackmapexec smb 10.10.10.161 -u '' -p '' --users
 ```
 
 
-# Obteniendo shell como svc-alfresco
+## Obteniendo shell como svc-alfresco
 
 Una vez que tengamos nuestra lista de usuarios del dominio, estamos en posición de intentar un ataque ASREPRoast. Este ataque se basa en explotar una debilidad específica en el protocolo de autenticación Kerberos. 
 
 Se explicará primero como funciona el protocolo Kerberos, luego en qué consiste el ataque ASREPRoast y finalmente se explotará el ataque para conseguir la contraseña del usuario *svc-alfresco*.
 
-## Protocolo Kerberos
+### Protocolo Kerberos
 
 El protocolo **Kerberos** proporciona autenticación mutua entre un cliente y un servidor en una red no segura. Esto se logra mediante el uso de tickets de concesión de servicio (TGS) y tickets de concesión de autenticación (TGT). A continuación se desglosan todos los pasos de la autenticación de Kerberos, teniendo en cuenta la siguiente imagen:
 
@@ -322,7 +322,7 @@ El protocolo **Kerberos** proporciona autenticación mutua entre un cliente y un
 5.  **Solicitud de servicio**: El cliente se comunica con el servidor enviando el ticket de servicio y un nuevo autenticador cifrado con la nueva clave de sesión.
 6.  **Acceso al servicio**: El servidor SQL descifra el ticket de servicio con su clave, obteniendo la nueva clave de sesión, y luego descifra el autenticador. Si la solicitud es válida, el cliente es autenticado y puede acceder al servicio.
 
-## ASREPRoast o AS-REP Roasting en detalle
+### ASREPRoast o AS-REP Roasting en detalle
 
 ASREPRoast, también conocido como AS-REP Roasting, debe su nombre a la etapa de respuesta AS-REP del protocolo Kerberos, que es donde se lleva a cabo el ataque. Se centra en explotar una característica específica de la implementación de Kerberos: la capacidad de desactivar la **"preautenticación"**.
 
@@ -334,7 +334,7 @@ Un atacante puede solicitar un TGT para dicho usuario y recibir la clave de sesi
 
 El ataque ASREPRoast implica la captura de estas **claves de sesión cifradas** y su descifrado fuera de línea mediante técnicas de fuerza bruta. Como la clave de la sesión está cifrada con la contraseña del usuario, descifrar la clave de sesión resulta en obtener la contraseña del usuario.
 
-## Explotación de ASREPRoast para obtener las credenciales de svc-alfresco
+### Explotación de ASREPRoast para obtener las credenciales de svc-alfresco
 
 En base a la enumeración previa realizada con `rpcclient`, se obtuvo una lista de usuarios del dominio. El siguiente paso consiste en solicitar un TGT para cada uno de estos usuarios, con la intención de identificar cualquier cuenta que tenga activada la opción `UF_DONT_REQUIRE_PREAUTH`. Esta opción deshabilita la preautenticación, lo que hace que las cuentas sean vulnerables al ataque ASREPRoast que se ha discutido anteriormente.
 
@@ -372,7 +372,7 @@ Este comando utiliza `john` para realizar un ataque de fuerza bruta en el hash o
 
 ![imagen 7](Pasted image 20230714221738.png)
 
-## Obtención de shell a través de WinRM como svc-alfresco
+### Obtención de shell a través de WinRM como svc-alfresco
 
 Ahora que se ha obtenido las credenciales de `svc-alfresco`, es posible avanzar y explorar nuevas formas de explotación. En concreto, se buscará acceder a la máquina objetivo utilizando el servicio **Windows Remote Management (WinRM)**.
 
@@ -398,7 +398,7 @@ r1pfr4n@parrot> evil-winrm -i 10.10.10.161 -u svc-alfresco -p 's3rvice'
 
 ![imagen 9](Pasted image 20230714222120.png)
 
-## user.txt 
+### user.txt 
 
 Encontraremos la **primera flag** en el directorio **Desktop** del usuario **svc-alfresco**:
 
@@ -407,15 +407,15 @@ PS C:\> type C:\Users\svc-alfresco\Desktop\user.txt
 1660df21057****50a9a7bce631c006e
 ```
 
-# Obteniendo shell como Administrator
+## Obteniendo shell como Administrator
 
 Después de obtener una **shell** inicial con el usuario **svc-alfresco**, el siguiente objetivo es escalar privilegios hasta conseguir una **shell** como **administrador del dominio**. Para esto, se debe realizar una serie de tareas de enumeración y explotación adicionales.
 
-## Enumeración
+### Enumeración
 
 El primer paso en este proceso de escalado de privilegios es la **enumeración** adicional **del Controlador de Dominio (DC)**. 
 
-### Grupos de svc-alfresco
+#### Grupos de svc-alfresco
 
 Un área particular de interés durante la enumeración es determinar a qué **grupos** pertenece el usuario **svc-alfresco**. Los grupos de los que un usuario forma parte pueden determinar qué recursos y servicios puede acceder, y pueden revelar posibles rutas para el escalado de privilegios.
 
@@ -433,15 +433,15 @@ En este caso, la enumeración reveló que el usuario **svc-alfresco** es **miemb
 
 Entendiendo esto, es posible crear un nuevo usuario en el dominio utilizando el comando `net user <nombre de usuario> <contraseña> /add`. Aunque este nuevo usuario no tiene todavía privilegios administrativos, esto puede suponer un avance significativo en el progreso del ataque.
 
-### Enumeración con BloodHound
+#### Enumeración con BloodHound
 
 Durante el proceso de infiltración en una red, especialmente en entornos Active Directory, es esencial realizar una tarea de enumeración detallada. En este contexto, la utilización de **BloodHound** es de gran valor, dado que permite visualizar de forma gráfica las **relaciones existentes entre los elementos del dominio** (usuarios, grupos, computadoras, etc.), facilitando el **descubrimiento de caminos de ataque**.
 
-#### ¿Qué es BloodHound y cómo funciona?
+##### ¿Qué es BloodHound y cómo funciona?
 
 **BloodHound** es una herramienta de análisis gráfico de relaciones en Active Directory que utiliza la *teoría de grafos* para descubrir las posibles vías de ataque menos privilegiadas que pueden llevar a una entidad a obtener más privilegios dentro del dominio. La herramienta utiliza su colector, **SharpHound**, para recolectar información del dominio y luego presenta esta información en una interfaz gráfica que facilita su análisis.
 
-#### Recolección de información con SharpHound
+##### Recolección de información con SharpHound
 
 Para obtener la información necesaria, se utiliza **SharpHound**. Esta herramienta se puede encontrar en versión [.exe](https://github.com/BloodHoundAD/BloodHound/blob/master/Collectors/SharpHound.exe) o bien en versión [.ps1](https://github.com/BloodHoundAD/BloodHound/blob/master/Collectors/SharpHound.ps1). 
 
@@ -474,7 +474,7 @@ PS C:\Users\s\Documents> download C:\Users\svc-alfresco\Documents\20230715012300
 
 Más información sobre la utilización de **SharpHound** y posibles configuraciones de la herramienta se puede encontrar en la página de [The Hacker Recipes](https://www.thehacker.recipes/ad/recon/bloodhound).
 
-#### Configuración de Neo4j y BloodHound
+##### Configuración de Neo4j y BloodHound
 
 **BloodHound** necesita una base de datos para operar, y utiliza **Neo4j**, una base de datos gráfica. Si no está instalado, se puede seguir la guía de instalación de la [documentación oficial de Neo4j](https://neo4j.com/docs/operations-manual/current/installation/linux/debian/#debian-installation). 
 
@@ -489,7 +489,7 @@ sudo apt-get install neo4j=1:5.6.0
 
 Una vez instalado **Neo4j**, se debe ejecutar con el comando `sudo neo4j console`. Si es la primera vez que se inicia, se deberá **configurar un usuario y una contraseña** que se usarán después en BloodHound. El panel de configuración de Neo4j suele residir en *http://localhost:7474/*.
 
-#### Ejecución de BloodHound
+##### Ejecución de BloodHound
 
 Con **Neo4j** funcionando, ya se puede iniciar **BloodHound**. Para ello, es necesario descargar la versión adecuada para el sistema operativo desde el [repositorio oficial de BloodHound](https://github.com/BloodHoundAD/BloodHound/releases). Una vez descargado y descomprimido, se encontrará el ejecutable de BloodHound. Al ejecutarlo, aparecerá una pantalla de inicio de sesión en la que se deben proporcionar las credenciales configuradas en Neo4j.
 
@@ -499,7 +499,7 @@ Una vez se ha accedido a **BloodHound**, en la parte superior derecha, se debe p
 
 Al finalizar la carga de los archivos, ya se puede comenzar con el análisis y reconocimiento del dominio utilizando **BloodHound**.
 
-#### Identificando el camino al dominio con BloodHound
+##### Identificando el camino al dominio con BloodHound
 
 Comenzando con el análisis, es una buena práctica **marcar** los usuarios cuyas credenciales se han obtenido como **Owned**. En este caso, se marca al usuario **svc-alfresco**. Esta acción no es solo una cuestión de llevar un registro, sino que también abre la posibilidad de utilizar algunas consultas adicionales en **BloodHound**, que pueden revelar rutas de ataque potencialmente ocultas:
 
@@ -525,7 +525,7 @@ Entonces, un posible camino para escalar privilegios sería el siguiente:
 2.  Usar este nuevo usuario, que ahora es miembro del grupo "Exchange Windows Permissions", para modificar la DACL del dominio **htb.local** y otorgarse los permisos necesarios para llevar a cabo un **DCSync Attack**.
 3.  Ejecutar un **DCSync Attack** para obtener las contraseñas de hash de los usuarios del dominio, incluyendo la del Administrador.
 
-## Elevación de Privilegios: De Usuario a Administador del dominio
+### Elevación de Privilegios: De Usuario a Administador del dominio
 
 Para continuar con el camino de escalada de privilegios que BloodHound nos ha mostrado, se deben tomar dos acciones principales. **Primero**, se necesita **agregar** el usuario **svc-alfresco** **o un nuevo usuario** al grupo "**Exchange Windows Permissions**", y **segundo**, se deben **asignar** los **permisos DCSync a ese usuario**.
 
@@ -556,7 +556,7 @@ El resultado es el siguiente:
 Para quienes estén interesados en explorar cómo se podría explotar este escenario utilizando directamente **svc-alfresco**, esa posibilidad se analizará en [el Anexo I](#anexo-i-ejecución-de-dcsync-attack-con-svc-alfresco-sin-crear-una-cuenta-adicional).
 
 
-### Obteniendo el Hash NT del Administrador del Dominio
+#### Obteniendo el Hash NT del Administrador del Dominio
 
 Finalmente, después de otorgar los permisos DCSync a "fran", se puede utilizar `secretsdump.py` en la máquina atacante para obtener el hash NT del usuario administrador del dominio con el siguiente comando:
 
@@ -582,7 +582,7 @@ La técnica de **Pass The Hash** permite utilizar este hash NT para autenticarse
 r1pfr4n@parrot> evil-winrm -i 10.10.10.161 -u 'Administrator' -H '32693b11e6aa90eb43d32c72a07ceea6'
 ```
 
-## root.txt
+### root.txt
 
 La segunda flag se encuentra en el directorio **Desktop** del usuario **Administrator**:
 
@@ -591,7 +591,7 @@ PS C:\Users\Administrator\Desktop> type root.txt
 8bd8bcd67695d5752****7b5b15cc2f7
 ```
 
-# Anexo I: Ejecución de DCSync Attack con svc-alfresco sin Crear una Cuenta Adicional
+## Anexo I: Ejecución de DCSync Attack con svc-alfresco sin Crear una Cuenta Adicional
 
 Es posible explotar el DCSync attack con **svc-alfresco** sin la necesidad de crear una nueva cuenta. Sin embargo, debido al script de reinicio mencionado en el Anexo II, es crucial que se realice dentro de un período de tiempo más corto a 60 segundos.
 
@@ -621,7 +621,7 @@ r1pfr4n@parrot> secretsdump.py 'htb.local/svc-alfresco:s3rvice@10.10.10.161'
 
 Estos pasos permitirán explotar el DCSync attack sin la necesidad de crear una nueva cuenta. Sin embargo, es importante recordar que el tiempo es esencial debido al script de reinicio que se ejecuta cada 60 segundos.
 
-# Anexo II: Script de Reinicio de Cuenta y Permisos
+## Anexo II: Script de Reinicio de Cuenta y Permisos
 
 Dentro del proceso de análisis y exploración, se encontró un script en la ruta `C:\Users\Administrator\Documents>`. Este script parece tener como objetivo restablecer la información de la cuenta **svc-alfresco** y de varios otros usuarios. Específicamente, este script parece encargado de restablecer las contraseñas y pertenencias de grupos de ciertos usuarios, además de eliminar cualquier permiso DCSync que se haya otorgado.
 

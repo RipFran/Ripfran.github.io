@@ -2,21 +2,21 @@
 title: RainyDay WriteUp
 date: 2023-02-18 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [docker,cookies,sudoers, port forwarding, bcrypt,python]     # TAG names should always be lowercase
+tags: [docker,cookies,sudoers, port forwarding, bcrypt,python]     ## TAG names should always be lowercase
 image: rainyday.jpg
 img_path: /photos/2023-02-18-RainyDay-WriteUp/
 ---
 
 ***RainyDay*** es una máquina ***Linux*** con dos servicios expuestos: *SSH* y *HTTP*. En primer lugar, conseguiremos autenticarnos en la página web ***crackeando el hash bcrypt*** de un usuario llamado *gary*, encontrado en el *endpoint* de una **API**. Autenticados, podremos desplegar un contenedor de *Docker* y llevar a cabo un **reconocimiento interno de la red**. Mediante *port forwarding* tendremos acceso a un **subdominio** que expone un *endpoint* a través del cual, mediante ***regex***, podremos listar y obtener el **contenido de archivos internos** de la máquina. Así, obtendremos el **secreto de las *cookies*** y forjaremos una para autenticarnos como el usuario *jack* a la web. Ganaremos **acceso al sistema** gracias a un **contenedor que este usuario está *hosteando***. Posteriormente, **pivotaremos** al usuario *jack_adm* aprovechándonos de un **privilegio** asignado a nivel de *sudoers*. **Romperemos las restricciones de la función *exec* de *Python***. Finalmente, para conseguir **máximos privilegios**, conseguiremos **romper** el *hash* *bcrypt* de la contraseña de *root*, **forjando el *pepper***, mediante un binario que *jack_adm* puede ejecutar como *root*.
 
-# Clasificación de dificultad de la máquina
+## Clasificación de dificultad de la máquina
 
 ![imagen 1](stats.png)
 
 
-# Reconocimiento
+## Reconocimiento
 
-## ping
+### ping
 
 Mandamos un _ping_ a la máquina víctima, con la finalidad de conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_ y un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -32,7 +32,7 @@ rtt min/avg/max/mdev = 136.622/136.622/136.622/0.000 ms
 
 Vemos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port discovery
+### Port discovery
 
 Procedemos a escanear todo el rango de puertos de la máquina víctima, con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo hacemos con la herramienta ***nmap***.
 
@@ -75,11 +75,11 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 El puerto **22** es **SSH** y el puerto **80** **HTTP**. De momento, al no disponer de credenciales para autenticarnos por _SSH_, nos centraremos en auditar el puerto **80**.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
 Gracias a los _scripts_ de reconocimiento que lanza _nmap_, nos damos cuenta de que el servicio web que corre en el puerto **80** nos redirige al dominio ***rainycloud.htb***. Para que nuestra máquina pueda resolver a este dominio deberemos añadirlo al final de nuestro _/etc/hosts_, de la siguiente forma:  `10.10.11.180 rainycloud.htb`.
 
-### Tecnologías utilizadas
+#### Tecnologías utilizadas
 
 En primer lugar, utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -87,7 +87,7 @@ En primer lugar, utilizaremos **_whatweb_** para enumerar las tecnologías que
 
 La IP nos redirecciona a *raynycloud.htb*, como ya sabíamos. La web está usando como servidor web *nginx 1.18.0*.
 
-### Inspeccionando la web
+#### Inspeccionando la web
 
 Al acceder a http://rainycloud.htb vemos lo siguiente:
 
@@ -103,7 +103,7 @@ La página nos responderá con el error *Error - Registration is currently close
 
 Para acceder a *My Containers* necesitaremos estar autenticados. En este punto, vamos a enumerar **subdominios** y **directorios** que se encuentren bajo el dominio *rainycloud.htb*.
 
-### Fuzzing de subdominios
+#### Fuzzing de subdominios
 
 Un subdominio es una sección del dominio principal, que se utiliza para organizar y diferenciar diferentes secciones de un sitio web. Por ejemplo, en *rainycloud.htb*, un subdominio puede ser *blog.rainycloud.htb* o *tienda.rainycloud.htb*.
 
@@ -135,7 +135,7 @@ Found: dev.rainycloud.htb (Status: 403) [Size: 26]
 Encontramos el subdominio ***dev.rainycloud.htb***. Lo incluiremos en nuestro archivo */etc/hosts* de la siguiente manera: `10.10.11.184 rainycloud.htb dev.rainycloud.htb`. Echaremos un vistazo a la web.
 
 
-### Inspeccionando dev.rainycloud.htb
+#### Inspeccionando dev.rainycloud.htb
 
 La página web tiene el siguiente aspecto:
 
@@ -143,7 +143,7 @@ La página web tiene el siguiente aspecto:
 
 Parece que desde nuestra IP no podemos acceder al sitio web. Podríamos intentar burlar la restricción utilizando cabeceras como *X-Forwarded-For*, pero no obtendremos el resultado esperado. De momento, **dejaremos apartado este subdominio** y continuaremos con el reconocimiento del dominio principal.
 
-### Fuzzing de directorios
+#### Fuzzing de directorios
 
 Vamos a **buscar directorios** que se encuentren bajo la URL `http://rainycloud.htb/`. Lo haremos con la herramienta *gobuster*:
 
@@ -180,7 +180,7 @@ by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
 
 Nos encuentra diversos directorios. *register* y *login* ya los conocemos. *logout* y *new* redireccionan a la web principal y al *login* respetivamente. ***api*** es un **directorio interesante**.
 
-### Inspeccionando http://rainycloud.htb/api
+#### Inspeccionando http://rainycloud.htb/api
 
 *http://rainycloud.htb/api* nos muestra varios *endpoints*:
 
@@ -209,7 +209,7 @@ En cambio, un *id* con valor **4** nos devuelve:
 
 Aunque hayamos descubierto estos identificadores, ***fuzzearemos*** el parámetro *id* para descubrir si se están empleando otros nombres de identificador. 
 
-#### Fuzzing de directorios en http://rainycloud.htb/api/user/
+##### Fuzzing de directorios en http://rainycloud.htb/api/user/
 
 Vamos a **buscar directorios** que se encuentren bajo la URL `http://rainycloud.htb/api/user/`. Lo haremos con la herramienta *wfuzz*. 
 
@@ -248,7 +248,7 @@ Requests/sec.: 0
 
 Aparte de los tres directorios que ya sabíamos, *1, 2* y *3*, encontramos otros tres nuevos: ***1.0, 2.0*** y ***3.0***. Vamos a investigarlos.
 
-#### Inpeccionando /api/user/1.0, /api/user/2.0 y /api/user/3.0
+##### Inpeccionando /api/user/1.0, /api/user/2.0 y /api/user/3.0
 
 Los **tres directorios** encontrados anteriormente **contienen credenciales de usuarios**. Cada directorio contiene unas credenciales diferentes. Las **contraseñas** se encuentran *hasheadas*:
 
@@ -268,7 +268,7 @@ gary:$2b$12$WTik5.ucdomZhgsX6U/.meSgr14LcpWXsCA0KxldEw8kksUtDuAuG
 
 Vamos a intentar **romper** los *hashes* a través de un **ataque por diccionario**.
 
-#### Rompiendo hashes bcrypt
+##### Rompiendo hashes bcrypt
 
 Romper un *hash* mediante un **ataque por diccionario** es un tipo de ataque criptográfico, que consiste en adivinar la contraseña original que se utilizó para crear un *hash*, a partir de una lista predefinida de palabras o combinaciones de palabras, conocida como **diccionario**.
 
@@ -301,7 +301,7 @@ Pasado un tiempo, obtenemos el siguiente **resultado**:
 
 Para el usuario ***gary***, descubrimos que su contraseña es ***rubberducky***.
 
-### Iniciando sesión en la página web
+#### Iniciando sesión en la página web
 
 Podemos utilizar las credenciales anteriores, `gary:rubberducky`, para autenticarnos en el portal web. Una vez dentro, tendremos acceso a la sección *My Containers*:
 
@@ -319,9 +319,9 @@ El sistema ofrece varias opciones, como la de ejecutar un comando en el contened
 
 Vamos a enviarnos una *reverse shell* y a enumerar la red desde dentro.
 
-# Consiguiendo shell como jack
+## Consiguiendo shell como jack
 
-## Ganando acceso completo a un contenedor
+### Ganando acceso completo a un contenedor
 
 Nos enviaremos una *reverse shell* para ganar acceso completo al contenedor. Para ello, recomiendo utilizar la imagen *alpine-python*, ya que tiene instalado *Python*, que nos permite enviar la *shell* utilizando este lenguaje. Por lo tanto, desplegaré un nuevo contenedor con la imagen *alpine-python*:
 
@@ -352,7 +352,7 @@ export SHELL=bash
 
 ![imagen 23](Pasted image 20230215221556.png)
 
-## Reconocimiento desde la red interna
+### Reconocimiento desde la red interna
 
 La IP que tiene asignada el contenedor es la *172.18.0.4* (esta IP puede variar dependiendo de los contenedores que haya desplegados):
 
@@ -363,7 +363,7 @@ La IP *172.18.0.1* debería pertenecer a la **máquina víctima**, por la forma 
 
 Recordemos que podemos obtener **resultados diferentes** escaneando un host desde la red interna a hacerlo desde el exterior. Otro punto importante es el no tener acceso a *dev.rainycloud.htb* desde el exterior (El servidor respondía con ***Access Denied - Invalid IP***). Vamos a utilizar *chisel* y *proxychains* para escanear los puertos de la *10.10.11.185* desde nuestra máquina de atacante, pero pasando por el contenedor para hacerlo desde la red interna. Posteriormente, investigaremos el **subdominio** *dev.rainycloud.htb*, también desde la red interna.
 
-### 172.18.0.1 Internal Port Discovery
+#### 172.18.0.1 Internal Port Discovery
 
 > Paso optativo. No encontraremos abierto ningún puerto interesante.
 {: .prompt-info }
@@ -416,7 +416,7 @@ Nmap done: 1 IP address (1 host up) scanned in 56.72 seconds
 
 Aparte del *22* y el *80* que ya los conocíamos, vemos abiertos dos nuevos puertos: el *49153* y el *49154*. Lamentablemente, estos puertos **no exponen ningún servicio interesante**.
 
-### Port forwarding. Investigando dev.rainyday.htb.
+#### Port forwarding. Investigando dev.rainyday.htb.
 
 Recordemos que **no** teníamos **acceso al subdominio desde el exterior** (utilizando la IP 10.10.11.184). Emplearemos [chisel](https://github.com/jpillora/chisel) para hacer *port forwarding* y tener conexión desde nuestro equipo de atacante a la **172.18.0.1:80**.
 
@@ -498,7 +498,7 @@ Como */etc/passwd* no empieza por *test*, el servidor nos responde con un *false
 * Podemos enumerar archivos internos de la máquina.
 * Podemos obtener el contenido de archivos internos de la máquina víctima.
 
-### Obteniendo secreto de las cookies
+#### Obteniendo secreto de las cookies
 
 Una ruta interesante para enumerar archivos es la que nos mostraba el *endpoint* *healthcheck*, */var/www/rainycloud*. En este directorio se encuentran todos los ficheros relativos a la página web.  
 
@@ -542,13 +542,13 @@ from pwn import *
 import string
 import requests
 
-# Variables globales
+## Variables globales
 letters = string.ascii_uppercase + " _\"':=!()){}[]" + string.digits + string.ascii_lowercase
 
 burp = {"http": "http://127.0.0.1:8080"}
 
 
-# Ctrl+C
+## Ctrl+C
 def def_handler(sig, frame):
     print("[!] Saliendo...")
     sys.exit(1)
@@ -607,7 +607,7 @@ Ejecutamos el *script* y, pasado un tiempo, deberíamos obtener la siguiente cad
 
 Parece que se trata del **secreto** de una *cookie*. 
 
-## Forjando la cookie de jack
+### Forjando la cookie de jack
 
 El **secreto de una cookie** (también conocido como *cookie secret* en inglés) es una cadena de caracteres aleatoria y secreta que se utiliza para firmar las *cookies* en una aplicación web. Disponiendo del **secreto**, podemos forjar una *cookie* con los datos que queramos.
 
@@ -637,7 +637,7 @@ Entrando en *My Containers*, tendremos acceso a *secrets*:
 
 Vamos a ganar acceso al contenedor.
 
-## Ganando acceso al contenedor secrets
+### Ganando acceso al contenedor secrets
 
 Ya podemos cambiar el */etc/hosts* para que *dev.rainycloud.htb rainycloud.htb* apunten a la IP 10.10.11.184:
 
@@ -668,7 +668,7 @@ export SHELL=bash
 
 Llevando a cabo un **reconocimiento básico del sistema**, no encuentra **nada interesante**. Es por eso que emplearé la herramienta *pspy* para ver qué tareas se están ejecutando a intervalos regulares de tiempo.
 
-### Reconocimiento del sistema con pspy
+#### Reconocimiento del sistema con pspy
 
 **_Pspy_** es una herramienta que nos permite ver qué tareas se están ejecutando a intervalos regulares de tiempo y por qué usuarios. Nos la podemos descargar del siguiente [repositorio](https://github.com/DominicBreuker/pspy).
 
@@ -680,7 +680,7 @@ Cada cierto tiempo se está ejecutando la siguiente tarea por el usuario con UID
 
 Simplemente se está ejecutando un ***sleep 100000000***. Un poco extraño, ya que esta cantidad de segundos equivale a 3,17 años. Vamos a inspeccionar el proceso que está corriendo este comando. Su PID (identificador) es **1196**. En */proc* encontraremos información sobre el mismo.
 
-### Ganando acceso a 10.10.11.184
+#### Ganando acceso a 10.10.11.184
 
 El directorio */proc* es un directorio especial en los sistemas operativos tipo *Linux*, que proporciona información en tiempo real sobre los procesos. El proceso que nos interesa está en */proc/1196*. El directorio contiene la siguiente información:
 
@@ -796,7 +796,7 @@ La utilizaremos para **conectarnos por SSH** con el comando `ssh -i id_rsa_jack 
 
 ![imagen 45](Pasted image 20230217100345.png)
 
-## user.txt
+### user.txt
 
 Encontraremos la primera *flag* en el *homedir* del usuario *jack*:
 
@@ -805,11 +805,11 @@ jack@rainyday:~$ cat user.txt
 2b7bcbb92d3837e8af26085bb2271c6b
 ```
 
-# Consiguiendo shell como jack_adm
+## Consiguiendo shell como jack_adm
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### sudoers
+#### sudoers
 
 El usuario *jack* tiene asignado el siguiente privilegio a nivel de ***sudoers***:
 
@@ -893,7 +893,7 @@ Al final, se establece el diccionario modificado `my_builtins` como el diccionar
 
 Por estas razones no podíamos utilizar `__import__` anteriormente, ya que forma parte de las **funciones peligrosas**.
 
-## Rompiendo protecciones Python exec
+### Rompiendo protecciones Python exec
 
 El proceso de explotación está extraído del siguiente [enlace](https://netsec.expert/posts/breaking-python3-eval-protections/). 
 
@@ -902,7 +902,7 @@ En *Python*, casi todo es un objeto que hereda de una clase base llamada *object
 Utilizaremos la clase *BuiltinImporter* de la lista de subclases, la instanciaremos e importaremos un módulo, en nuestro caso *os*. El comando de sistema que ejecutaremos será una *bash*:
 
 ```bash
-# Trying to do anything up here would fail since the builtins are cleared.
+## Trying to do anything up here would fail since the builtins are cleared.
 for some_class in [].__class__.__base__.__subclasses__():
     if some_class.__name__ == 'BuiltinImporter':
         some_class().load_module('os').system('bash')
@@ -917,11 +917,11 @@ jack_adm
 ```
 
 
-# Consiguiendo shell como root
+## Consiguiendo shell como root
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### sudoers
+#### sudoers
 
 *jack_adm* tiene asignado el siguiente privilegio a nivel de *sudoers*:
 
@@ -951,23 +951,23 @@ Sabiendo que:
 
 Podemos obtener esta extensión que se le está concatenando a la contraseña, posteriormente crear un diccionario de contraseñas que contemplen este secreto y finalmente volver a *crackear* el *hash* de *root*. Con un poco de suerte, **conseguiremos su contraseña y podremos escalar privilegios**.
 
-### Obteniendo secreto (pepper)
+#### Obteniendo secreto (pepper)
 
-#### Contexto
+##### Contexto
 
 Como he comentado anteriormente, la longitud máxima de contraseña que admite *bcrypt* son **72 *bytes***. Imaginemos que para generar el *hash* de *root* se ha utilizado el siguiente código:
 
 ```python
 import bcrypt
 
-# Define la contraseña y el pepper
-password = 'password' # Contraseña 
-pepper = 'my_super_secret_pepper' # Pepper de ejemplo
+## Define la contraseña y el pepper
+password = 'password' ## Contraseña 
+pepper = 'my_super_secret_pepper' ## Pepper de ejemplo
 
-# Concatena la contraseña y el pepper
+## Concatena la contraseña y el pepper
 password_with_pepper = password + pepper
 
-# Genera el hash en bcrypt utilizando la contraseña concatenada y un factor de trabajo de 12
+## Genera el hash en bcrypt utilizando la contraseña concatenada y un factor de trabajo de 12
 hashed_password = bcrypt.hashpw(password_with_pepper.encode('utf-8'), bcrypt.gensalt(12))
 ```
 
@@ -985,7 +985,7 @@ Conseguiremos la primera letra del *pepper*. Para la siguiente letra, se hará l
 
 Ahora bien, todo este proceso tiene un pequeño **inconveniente**. Recordemos que *hash_password.py* no nos deja escribir contraseñas más largar de 30 caracteres. Uno pensaría que entonces es imposible escribir una contraseña de 71B, ya que un carácter suele ocupar 1B. Pues **existen caracteres que ocupan 4B**. Dejo [este](https://design215.com/toolbox/utf8-4byte-characters.php) enlace.
 
-#### Explotación
+##### Explotación
 
 El siguiente *payload* tiene un tamaño de **71B**:
 
@@ -1064,7 +1064,7 @@ La siguiente letra es *3*.
 
 Y así sucesivamente hasta extraer completamente el valor del *pepper*, ***H34vyR41n***. En el *Anexo*, dejo el código de *hash_password.py*.
 
-### Obteniendo contraseña de root
+#### Obteniendo contraseña de root
 
 Estamos suponiendo que el *hash* que conseguimos de *root* en el inicio de la resolución de la máquina, `$2a$05$FESATmlY4G7zlxoXBKLxA.kYpZx8rLXb2lMjz3SInN4vbkK82na5W`, surge de la concatenación de su contraseña y de un secreto o *pepper*. 
 
@@ -1085,19 +1085,19 @@ Finalmente, nos autenticamos como *root*:
 ![imagen 52](Pasted image 20230217140435.png)
 
 
-## root.txt
+### root.txt
 
 La última *flag* se encuentra en el *homedir* del usuario *root*:
 
 ```bash
-root@rainyday:~# cat root.txt 
+root@rainyday:~## cat root.txt 
 a3cdfcc40021603153cea6c703b7c146
 ```
 
 
-# Anexo
+## Anexo
 
-## Código de hash_password.py 
+### Código de hash_password.py 
 
 Código fuente del binario *hash_password.py*. **Solo accesible siendo *root***: 
 
@@ -1119,7 +1119,7 @@ while True:
 ```
 
 ```bash
-root@rainyday:/opt/hash_system# cat config.py 
+root@rainyday:/opt/hash_system## cat config.py 
 SECRET='H34vyR41n'
 ```
 

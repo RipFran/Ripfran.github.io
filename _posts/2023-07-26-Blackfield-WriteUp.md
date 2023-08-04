@@ -15,11 +15,11 @@ Usando la explotación de privilegios excesivos y el acceso a un **volcado de LS
 Este análisis es complementado con dos anexos. El [Anexo I](#anexo-i-análisis-del-problema-de-lectura-de-la-segunda-flag) desentraña las **limitaciones** encontradas al intentar leer la **segunda flag** con un usuario del **grupo Backup Operators**. En el [Anexo II](#anexo-ii-proceso-de-volcado-del-registro-de-seguridad-de-cuentas-sam), se explora el valor del **volcado de SAM** en contextos más allá de la máquina actual, agregando perspectivas valiosas para futuras situaciones de compromiso.
 
 
-# Reconocimiento
+## Reconocimiento
 
 En esta etapa, nos esforzamos por recopilar la mayor cantidad de información posible sobre nuestro objetivo.
 
-## Identificación del Sistema Operativo con Ping
+#### Identificación del Sistema Operativo con Ping
 
 Empezamos por realizar un _**ping**_ a la máquina víctima. La finalidad del _ping_ no es solamente confirmar la conectividad, sino también deducir el sistema operativo que la máquina víctima está utilizando. ¿Cómo lo hace? Por medio del _**Time to Live (TTL)**_.
 
@@ -40,7 +40,7 @@ rtt min/avg/max/mdev = 143.094/143.094/143.094/0.000 ms
 
 Observamos que el _**TTL**_ es 127, lo que sugiere que nos enfrentamos a una máquina **Windows**.
 
-## Descubrimiento de puertos
+### Descubrimiento de puertos
 
 El próximo paso en nuestro proceso de exploración es descubrir los puertos abiertos en la máquina víctima. Para ello, utilizamos la herramienta **nmap**. Nmap nos permite identificar los **puertos abiertos** (status open) en la máquina, que podrían ser potenciales vectores de ataque.
 
@@ -128,7 +128,7 @@ El resultado de este escaneo revela información adicional sobre los servicios e
 | 5985      | WinRM                             | Estos servicios permitirán el acceso remoto a los sistemas de administración.                                                   | Las vulnerabilidades o problemas de configuración pueden permitir la ejecución remota de código o la escalada de privilegios.                  | 
 
 
-## Puerto 445 abierto (SMB)
+### Puerto 445 abierto (SMB)
 
 **El protocolo SMB (Server Message Block)**, que en este caso opera a través del puerto 445, se selecciona para un reconocimiento inicial por su relevancia en la configuración de redes Windows y su conocido historial de vulnerabilidades explotables.
 
@@ -189,13 +189,13 @@ Este comando utiliza `awk`, una herramienta para manipular datos, que imprime el
 
 Después de limpiar la lista de usuarios de líneas que no corresponden a nombres de usuarios, se dispone de una **lista de posibles usuarios de dominio**. El siguiente paso es **validar** cuáles de estos nombres de usuario son usuarios de dominio válidos y si alguno de ellos es vulnerable a un **ataque ASREPRoasting**, marcando así el inicio de la fase de explotación.
 
-# Obteniendo shell como svc_backup
+## Obteniendo shell como svc_backup
 
 En este capítulo, se muestra cómo navegar a través de la red de usuarios para acceder a cuentas con privilegios más elevados. Se abordará cómo se identifican las **cuentas de dominio vulnerables a ASREPRoasting**, cómo se utilizan herramientas de mapeo de red como **BloodHound**, y cómo se gana acceso a **recursos compartidos previamente inaccesibles**. Finalmente, se demostrará cómo todo esto lleva a obtener las credenciales de `svc_backup` para conectarse al Controlador de Dominio.
 
 Antes de proceder con la explotación del ASREPRoasting, se abordará el **funcionamiento** del protocolo **Kerberos**, seguido de una descripción detallada del **ataque ASREPRoast**.
 
-## Protocolo Kerberos
+### Protocolo Kerberos
 
 El protocolo **Kerberos** proporciona autenticación mutua entre un cliente y un servidor en una red no segura. Esto se logra mediante el uso de tickets de concesión de servicio (TGS) y tickets de concesión de autenticación (TGT). A continuación se desglosan todos los pasos de la autenticación de Kerberos, teniendo en cuenta la siguiente imagen:
 
@@ -208,7 +208,7 @@ El protocolo **Kerberos** proporciona autenticación mutua entre un cliente y un
 5.  **Solicitud de servicio**: El cliente se comunica con el servidor enviando el ticket de servicio y un nuevo autenticador cifrado con la nueva clave de sesión.
 6.  **Acceso al servicio**: El servidor SQL descifra el ticket de servicio con su clave, obteniendo la nueva clave de sesión, y luego descifra el autenticador. Si la solicitud es válida, el cliente es autenticado y puede acceder al servicio.
 
-## ASREPRoast o AS-REP Roasting en detalle
+### ASREPRoast o AS-REP Roasting en detalle
 
 ASREPRoast, también conocido como AS-REP Roasting, debe su nombre a la etapa de respuesta AS-REP del protocolo Kerberos, que es donde se lleva a cabo el ataque. Este ataque se centra en explotar la capacidad de desactivar la **"preautenticación"** en el protocolo Kerberos.
 
@@ -226,7 +226,7 @@ Es importante destacar que no todos los usuarios en el dominio tendrán la opci�
 
 **Nota**: En la imagen se muestra la opción **UF_DONT_REQUIRE_PREAUTH** en la herramienta de administración de Active Directory. Esta opción puede ser habilitada o deshabilitada para usuarios específicos según las necesidades y políticas de seguridad del dominio.
 
-## Explotación de ASREPRoast para obtener las credenciales de support
+### Explotación de ASREPRoast para obtener las credenciales de support
 
 La fase inicial de este proceso implica **analizar** la **lista de 314 usuarios obtenida a través de la enumeración de SMB**. El objetivo es identificar qué usuarios en esta lista son del dominio y si son vulnerables al ataque ASREPRoast.
 
@@ -309,11 +309,11 @@ Si el resultado muestra '**Pwned!**', indica que el usuario pertenece al grupo "
 
 A partir de aquí, la **enumeración** del sistema debe continuar, pero ahora con las nuevas **credenciales** obtenidas, permitiendo una exploración más efectiva.
 
-## Enumeración con las credenciales de support
+### Enumeración con las credenciales de support
 
 Con las credenciales obtenidas para el usuario `support`, se procede a realizar una enumeración adicional de recursos compartidos y usuarios del dominio. 
 
-### Enumeración de SMB
+#### Enumeración de SMB
 
 Se utiliza la herramienta `crackmapexec` para enumerar los recursos compartidos SMB disponibles para el usuario `support`. El comando utilizado es el siguiente:
 
@@ -327,7 +327,7 @@ Durante la enumeración, se detectan dos recursos compartidos SMB a los que el u
 
 Sin embargo, es importante destacar que, aunque se tiene acceso de lectura a estos recursos, **no se obtiene información relevante** para avanzar en la intrusión.
 
-### Enumeración por RPC
+#### Enumeración por RPC
 
 Otra herramienta utilizada para obtener información sobre los usuarios del dominio es `rpcclient`. Se realiza una conexión RPC al controlador de dominio utilizando las credenciales de `support` con el siguiente comando:
 
@@ -351,7 +351,7 @@ r1pfr4n@parrot> cat users.txt | grep -oP '\[.*?\]' | grep -v '0x' | tr -d '[]' |
 
 Este comando aplica una serie de filtros a la lista de usuarios (`users.txt`) y elimina información innecesaria, dejando solo los nombres de usuario en el archivo.
 
-### Nueva exploración con Kerbrute
+#### Nueva exploración con Kerbrute
 
 Una vez obtenida la **lista filtrada de usuarios del dominio**, se utiliza nuevamente la herramienta **Kerbrute** para intentar identificar **usuarios vulnerables a ASREPRoasting**. El comando utilizado es el siguiente:
 
@@ -367,11 +367,11 @@ Esta información ya había sido identificada previamente, lo que significa que 
 
 En este punto, se decide llevar a cabo un reconocimiento más detallado utilizando la herramienta **BloodHound** para obtener una visión más completa de los privilegios y relaciones entre usuarios y grupos en la red. 
 
-### Enumeración con BloodHound
+#### Enumeración con BloodHound
 
 **BloodHound** es una poderosa herramienta de análisis gráfico de relaciones en entornos de Active Directory que utiliza la *teoría de grafos* para visualizar y analizar la estructura del dominio y las relaciones de confianza entre diferentes entidades. Esta herramienta permite identificar posibles rutas de ataque menos privilegiadas que podrían llevar a una entidad a obtener más privilegios dentro del dominio.
 
-#### Recolección de información con bloodhound-python
+##### Recolección de información con bloodhound-python
 
 En este punto, se utilizará la herramienta **bloodhound-python** para recolectar la información necesaria desde la máquina de atacante. A diferencia de otras máquinas resueltas en este blog, donde se empleó el collector **SharpHound** para recolectar datos, en esta situación, como no se tiene acceso directo a la máquina víctima, se recurrirá a **bloodhound-python**.
 
@@ -407,7 +407,7 @@ Al ejecutar este comando, **bloodhound-python** recopilará la información nece
 
 Este archivo **zip** se utilizará posteriormente para **cargar la información en la plataforma de BloodHound** y realizar un análisis detallado de las relaciones y posibles rutas de ataque dentro del dominio.
 
-#### Configuración de Neo4j y BloodHound
+##### Configuración de Neo4j y BloodHound
 
 **BloodHound** necesita una base de datos para operar, y utiliza **Neo4j**, una base de datos gráfica. Si no está instalado, se puede seguir la guía de instalación de la [documentación oficial de Neo4j](https://neo4j.com/docs/operations-manual/current/installation/linux/debian/#debian-installation). 
 
@@ -422,7 +422,7 @@ sudo apt-get install neo4j=1:5.6.0
 
 Una vez instalado **Neo4j**, se debe ejecutar con el comando `sudo neo4j console`. Si es la primera vez que se inicia, se deberá **configurar un usuario y una contraseña** que se usarán después en BloodHound. El panel de configuración de Neo4j suele residir en http://localhost:7474/.
 
-#### Ejecución de BloodHound
+##### Ejecución de BloodHound
 
 Con **Neo4j** funcionando, ya se puede iniciar **BloodHound**. Para ello, es necesario descargar la versión adecuada para el sistema operativo desde el [repositorio oficial de BloodHound](https://github.com/BloodHoundAD/BloodHound/releases). Una vez descargado y descomprimido, se encontrará el ejecutable de BloodHound. Al ejecutarlo, aparecerá una pantalla de inicio de sesión en la que se deben proporcionar las credenciales configuradas en Neo4j.
 
@@ -432,7 +432,7 @@ Una vez se ha accedido a **BloodHound**, en la parte superior derecha, se debe p
 
 Al finalizar la carga de los archivos, ya se puede comenzar con el análisis y reconocimiento del dominio utilizando **BloodHound**.
 
-#### Potencial Toma de Control de Cuenta a través de Privilegio ForceChangePassword
+##### Potencial Toma de Control de Cuenta a través de Privilegio ForceChangePassword
 
 Comenzando con el análisis, es una buena práctica **marcar** los usuarios cuyas credenciales se han obtenido como **Owned**. En este caso, se marca al usuario **support**. Esta acción no es solo una cuestión de llevar un registro, sino que también abre la posibilidad de utilizar algunas consultas adicionales en **BloodHound**, que pueden revelar rutas de ataque potencialmente ocultas:
 
@@ -448,7 +448,7 @@ El privilegio `ForceChangePassword` es una característica de Active Directory q
 
 Este hallazgo plantea una potencial vía de ataque, ya que si `support` logra cambiar la contraseña de `audit2020`, podría tomar el **control total de la cuenta** `audit2020`. Desde esta posición, `support` podría acceder a recursos y realizar acciones en nombre de `audit2020`, lo que representa un riesgo significativo para la seguridad del dominio.
 
-## Explotación de ForceChangePassword sobre la cuenta audit2020
+### Explotación de ForceChangePassword sobre la cuenta audit2020
 
 Una vez identificado el privilegio **ForceChangePassword** que el usuario `support` posee sobre la cuenta `audit2020`, se procede a explotar este privilegio para cambiar la contraseña de `audit2020`. 
 
@@ -492,11 +492,11 @@ Sin embargo, el **acceso** **a través de WinRM no es posible** con estas creden
 
 Por lo tanto, se procede a realizar una enumeración de los servicios con las credenciales de `audit2020` para buscar posibles vías de intrusión en la máquina.
 
-## Enumeración con las credenciales de audit2020
+### Enumeración con las credenciales de audit2020
 
 Con las credenciales obtenidas para el usuario `audit2020`, se procede a realizar una enumeración adicional de los servicios en ejecución para identificar posibles vías de intrusión.
 
-### Enumeración de SMB
+#### Enumeración de SMB
 
 Se realiza una nueva enumeración del servicio SMB, pero esta vez se utilizan las credenciales de `audit2020` para buscar recursos compartidos a los cuales no se tenía acceso previamente. El comando utilizado para esta enumeración es el siguiente:
 
@@ -534,7 +534,7 @@ Dentro de los archivos comprimidos en la carpeta `memory_analysis`, el volcado d
 
 ![imagen 27](Pasted image 20230721192310.png)
 
-### LSASS: una visión general
+#### LSASS: una visión general
 
 **LSASS (Local Security Authority Subsystem Service)** es un componente crucial del sistema operativo Windows, encargado de manejar la **autenticación de usuarios en el sistema** y de mantener la seguridad de las credenciales de los usuarios.
 
@@ -544,7 +544,7 @@ Obtener acceso a un volcado de LSASS puede ser extremadamente valioso desde una 
 
 Este tipo de ataque, conocido como **ataque Pass-The-Hash (PTH)**, puede permitir a un atacante autenticarse directamente como un usuario específico, sin necesidad de conocer la contraseña real de este usuario. De esta forma, un atacante puede moverse lateralmente dentro de una red y escalar privilegios sin tener que descifrar ninguna contraseña.
 
-### Análisis del volcado del LSASS
+#### Análisis del volcado del LSASS
 
 Tras obtener el volcado de `lsass.zip`, se procede a descomprimirlo en el directorio de trabajo. Para analizar la información relevante que se encuentra en el volcado de LSASS, se utiliza la herramienta `pypykatz`, que es una implementación en Python de la conocida herramienta `mimikatz`. La ventaja de `pypykatz` es que permite ejecutar funcionalidades similares a las de `mimikatz` pero en un entorno Linux, algo especialmente útil en este escenario.
 
@@ -574,7 +574,7 @@ Por otro lado, el **hash NT** del usuario `svc_backup` resulta ser **válido**:
 
 ![imagen 28](Pasted image 20230721193139.png)
 
-## Obtención de shell a través de WinRM como svc_backup
+### Obtención de shell a través de WinRM como svc_backup
 
 Ahora que se ha obtenido las credenciales de `svc_backup`, es posible avanzar y explorar nuevas formas de explotación. En concreto, se buscará acceder a la máquina objetivo utilizando el servicio **Windows Remote Management (WinRM)**.
 
@@ -600,7 +600,7 @@ r1pfr4n@parrot> evil-winrm -i 10.10.10.192 -u 'svc_backup' -H '9658d1d1dcd925011
 
 ![imagen 30](Pasted image 20230721193440.png)
 
-## user.txt
+### user.txt
 
 Encontraremos la **primera flag** en el directorio **Desktop** del usuario **svc_backup**:
 
@@ -609,11 +609,11 @@ PS C:\Users\svc_backup\Desktop> type user.txt
 3920bb317a0bef***27e2852be64b543
 ```
 
-# Obteniendo shell como Administrador del Dominio
+## Obteniendo shell como Administrador del Dominio
 
 Después de obtener una _shell_ inicial con el usuario _svc_backup_, el siguiente objetivo es escalar privilegios hasta conseguir una _shell_ como **administrador del dominio**. Para esto, se debe realizar una serie de tareas de enumeración y explotación adicionales.
 
-## Identificando privilegios y grupos de svc_backup
+### Identificando privilegios y grupos de svc_backup
 
 Comenzando con la enumeración, se utiliza el comando `whoami /all`. Este comando resulta útil para mostrar detalles extensos sobre el usuario actual y su membresía en cualquier grupo de seguridad, ofreciendo una visión completa de los privilegios del usuario, los grupos a los que pertenece y los niveles de acceso que tiene en el sistema.
 
@@ -633,7 +633,7 @@ A continuación, se adjunta una imagen con la información oficial que proporcio
 
 Dado que estos privilegios permiten a los usuarios leer y escribir en cualquier archivo del sistema, se pueden utilizar para explotar el sistema y escalar privilegios hasta el nivel de **administrador del dominio**.
 
-## Explotación de Backup Operators para leer la segunda flag (Intento Fallido)
+### Explotación de Backup Operators para leer la segunda flag (Intento Fallido)
 
 Un pensamiento razonable que puede surgir al conocer los privilegios de `Backup Operators` sería considerar la posibilidad de **leer la segunda flag de la máquina**, terminar el desafío y celebrar el éxito. Sin embargo, el escenario es más complicado y esta estrategia, a pesar de ser lógica, no proporcionará los resultados deseados.
 
@@ -676,7 +676,7 @@ Sin embargo, al intentar el mismo proceso con el archivo `root.txt`, se recibe u
 
 El porqué de este comportamiento se explicará en detalle en el [Anexo I](#anexo-i-análisis-del-problema-de-lectura-de-la-segunda-flag). 
 
-## Explotando Backup Operators para volcar NTDS
+### Explotando Backup Operators para volcar NTDS
 
 Continuando con la exploración de las posibilidades que ofrecen los privilegios de `Backup Operators`, se procede a intentar una operación de **volcado del NTDS** (New Technology Directory Services)
 
@@ -684,7 +684,7 @@ El **enfoque general** de este proceso implica aprovechar los privilegios otorga
 
 Aunque podría ser también relevante **volcar la SAM**, para mantener la claridad y concisión de este WriteUp, la discusión sobre el volcado de la SAM se trasladará al [Anexo II](#anexo-ii-proceso-de-volcado-del-registro-de-seguridad-de-cuentas-sam) de este documento.
 
-### ¿Qué es NTDS?
+#### ¿Qué es NTDS?
 
 El **NTDS** es una **base de datos** que **almacena información sobre los objetos en un dominio, incluidos los usuarios, grupos y computadoras.** Es un componente crucial de cualquier entorno de Active Directory, ya que es responsable de mantener y administrar la información de seguridad de todos los objetos de un dominio. Si un atacante puede obtener acceso a este archivo, puede tener la capacidad de extraer información confidencial, como **contraseñas** de usuario y **hashes** de contraseñas.
 
@@ -694,7 +694,7 @@ Para el volcado local del NTDS con `secretsdump.py`, se necesitan dos archivos: 
   
 - **NTDS.dit**: Este es el archivo de base de datos principal para Active Directory. Contiene todas las relaciones de confianza de Active Directory, los detalles de la cuenta de usuario (incluidas las contraseñas) y la información de la membresía del grupo.
 
-### Extracción del archivo SYSTEM
+#### Extracción del archivo SYSTEM
 
 El primer paso es obtener el archivo **SYSTEM**. Este proceso es sencillo y se puede lograr ejecutando el siguiente comando:
 
@@ -710,7 +710,7 @@ PS C:\Users\svc_backup\Desktop> download C:\Users\svc_backup\Desktop\system.save
 
 No obstante, la extracción del archivo **NTDS.dit** presenta **mayor dificultad**, dado que el sistema operativo interactúa constantemente con este archivo, **imposibilitando una copia directa**. Esto significa que incluso utilizando herramientas como el comando `Copy-FileSeBackupPrivilege` explorado anteriormente, no se lograría obtener una copia del archivo NTDS debido a la constante interacción del sistema operativo con él.
 
-### Extracción del archivo NTDS.dit mediante DiskShadow
+#### Extracción del archivo NTDS.dit mediante DiskShadow
 
 La extracción del archivo NTDS.dit se realiza siguiendo la información proporcionada por [Pentestlab](https://pentestlab.blog/tag/diskshadow/), que ofrece diversos métodos para esta tarea. Para este WriteUp, se utiliza una versión modificada de uno de estos métodos, ajustada según las necesidades del contexto.
 
@@ -766,7 +766,7 @@ Para finalizar, se descarga el archivo ntds.dit utilizando el comando `download`
 PS C:\Users\svc_backup\Desktop> download C:\Users\svc_backup\Desktop\ntds.dit
 ```
 
-### Limpieza Post-Extracción (recomendable)
+#### Limpieza Post-Extracción (recomendable)
 
 Una vez se ha copiado el archivo **ntds.dit** y descargado a la máquina atacante, es recomendable realizar la limpieza de los rastros de la actividad realizada en la máquina víctima. En concreto, **se recomienda** **eliminar el volumen creado en el proceso de copiado** (en este caso, el volumen x).
 
@@ -794,7 +794,7 @@ Después de ejecutar este comando, el volumen x debería estar eliminado, reduci
 
 Con el archivo **ntds.dit** y **SYSTEM** en la máquina atacante, ahora es posible proceder a utilizar `secretsdump.py` de Impacket para volcar la base de datos NTDS y extraer las credenciales del usuario administrador del dominio. 
 
-### Volcado de NTDS con secretsdump.py
+#### Volcado de NTDS con secretsdump.py
 
 Disponiendo de los archivos **ntds.dit** y **system.save** en la máquina atacante, es posible ejecutar el comando `secretsdump.py` para volcar el contenido de NTDS de la siguiente manera:
 
@@ -841,7 +841,7 @@ Al ejecutar este comando, se iniciará una sesión en el Controlador de Dominio 
 
 En una inspección más detallada del volcado de NTDS, se puede confirmar que las **contraseñas** asociadas a las cuentas "**Administrator**" y "**DC01\$**" **han cambiado** desde que se realizó el **volcado LSASS** encontrado en el recurso compartido memory_analysis. Los hashes NT para "Administrator" y "DC01$" en el NTDS son "184fb5e5178480be64824d4cd53b99ee" y "7f82cc4be7ee6ca0b417c0719479dbec", respectivamente, diferentes a los hashes "7f1e4ff8c6a8e6b6fcae2d9c0572cd62" y "b624dc83a27cc29da11d9bf25efea796" almacenados en el volcado LSASS.DMP.
 
-## root.txt
+### root.txt
 
 La segunda flag se encuentra en el directorio **Desktop** del usuario **Administrator**:
 
@@ -850,7 +850,7 @@ PS C:\Users\Administrator\Desktop> type root.txt
 4375a629c7c6***e29db269060c955cb
 ```
 
-# Anexo I: Análisis del Problema de Lectura de la Segunda Flag
+## Anexo I: Análisis del Problema de Lectura de la Segunda Flag
 
 Este Anexo busca esclarecer el problema encontrado durante la lectura de la segunda flag contenida en el archivo `root.txt`. A pesar de que el usuario `svc_backup` es miembro del grupo `Backup Operators`, y ostenta privilegios amplios, encontró limitaciones para la lectura de este archivo. En esta sección, analizaremos este inconveniente con detalles sobre la encriptación de archivos y las especificidades de las sesiones en Windows.
 
@@ -930,7 +930,7 @@ Resumiendo, `svc_backup`, pese a pertenecer al grupo `Backup Operators`, no fue 
 
 El análisis aquí descrito fue posible gracias a la contribución del WriteUp de 0xdf para resolver este mismo caso. Para obtener información adicional, se puede consultar el siguiente enlace: [https://0xdf.gitlab.io/2020/10/03/htb-blackfield.html#beyond-root---efs](https://0xdf.gitlab.io/2020/10/03/htb-blackfield.html#beyond-root---efs).
 
-# Anexo II: Proceso de Volcado del Registro de Seguridad de Cuentas (SAM)
+## Anexo II: Proceso de Volcado del Registro de Seguridad de Cuentas (SAM)
 
 El Registro de Seguridad de Cuentas (conocido como **SAM**, por sus siglas en inglés) es una **base de datos** en el sistema operativo Windows que **almacena las contraseñas** de los **usuarios locales** en formato hash. La SAM es relevante en términos de seguridad informática y administración de contraseñas, ya que es la principal base de datos que Windows emplea para guardar las credenciales de los usuarios.
 

@@ -2,20 +2,20 @@
 title: Forgot WriteUp
 date: 2023-03-04 16:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [cache poisoning, password reset poisoning, python code injection]     # TAG names should always be lowercase
+tags: [cache poisoning, password reset poisoning, python code injection]     ## TAG names should always be lowercase
 image: forgot.jpg
 img_path: /photos/2023-03-01-Forgot-WriteUp/
 ---
 
 ***Forgot*** es una máquina ***Linux*** con dos servicios expuestos: *SSH* y *HTTP*. Primero, explotaremos un ***Password Reset Poisoning*** para **restablecer** la **contraseña** del usuario *robert-dev-14529*. Posteriormente, conseguiremos obtener la *cookie* de sesión del usuario *admin* a través de un ***Web Cache Poisoning***. Autenticados como *admin*, encontraremos las **credenciales** *SSH* del usuario *diego* en un *endpoint* de la página web. Para conseguir **máximos privilegios**, podremos ejecutar como *root* un archivo en *python*, que contiene una vulnerabilidad asociada a la librería *tensorflow* de **inyección de código**.
 
-# Clasificación de dificultad de la máquina
+## Clasificación de dificultad de la máquina
 
 ![imagen 1](stats.png)
 
-# Reconocimiento
+## Reconocimiento
 
-## ping
+### ping
 
 Mandamos un _ping_ a la máquina víctima, con la finalidad de conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_ y un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -32,7 +32,7 @@ rtt min/avg/max/mdev = 92.470/92.470/92.470/0.000 ms
 
 Comprobamos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port Discovery
+### Port Discovery
 
 Procedemos a escanear todo el rango de puertos de la máquina víctima, con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo hacemos con la herramienta ***nmap***.
 
@@ -158,9 +158,9 @@ Las **tecnologías** que se están empleando en la **página web** (puerto 80) s
 
 De momento, al no disponer de credenciales para autenticarnos por _SSH_, nos centraremos en auditar el puerto **80**.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
-### Tecnologías empleadas
+#### Tecnologías empleadas
 
 En primer lugar, utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -168,7 +168,7 @@ En primer lugar, utilizaremos **_whatweb_** para enumerar las tecnologías que
 
 Muestra las mismas tecnologías que el *script* anterior de *nmap*: como servidor web se está empleando *Werzeug* y *Python* y como servidor *proxy* de caché *Varnish*, concretamente la versión *6.2*.
 
-### Investigando web
+#### Investigando web
 
 Al acceder a *http://10.10.11.188* vemos lo siguiente:
 
@@ -196,7 +196,7 @@ Debido a la lentitud del servidor, no es buena idea llevar a cabo una enumeraci�
 
 En este punto, vamos a *fuzzear* directorios a ver si encontramos alguno interesante.
 
-### Fuzzing de directorios
+#### Fuzzing de directorios
 
 **Buscaremos directorios** que se encuentren bajo la URL `http://10.10.11.188/`. Lo haremos con la herramienta *gobuster*:
 
@@ -241,11 +241,11 @@ Nos encontramos con los dos campos típicos de **restablecimiento de contraseña
 
 Habiendo encontrado un **usuario válido** y el *endpoint* de restablecimiento de contraseñas, podríamos intentar **envenenar una solicitud de restablecimiento de contraseña**, para que *robert-dev-14529*, al hacer clic en el enlace que envía el servidor a su *inbox*, nos envíe el *token* de identificación y podamos **cambiar su contraseña**. Este ataque se conoce como ***Password reset poisoning***
 
-# Consiguiendo shell como diego
+## Consiguiendo shell como diego
 
-## Password reset poisoning
+### Password reset poisoning
 
-### Concepto
+#### Concepto
 
 El ataque *Password Reset Poisoning (PRP)* es una técnica de ataque que tiene como objetivo obtener el control de una cuenta de usuario al explotar una vulnerabilidad en el proceso de recuperación de contraseña. 
 
@@ -269,7 +269,7 @@ Imagen extraída de [PortSwigger](https://portswigger.net/web-security/host-head
 
 Es importante destacar que, **para explotar esta vulnerabilidad**, **se necesita la interacción de otra persona**, que es la que clicará en el enlace que le enviará el servidor para restablecer la contraseña.
 
-### Explotación
+#### Explotación
 
 Dicho lo anterior, primero viajaremos a *http://10.10.11.188/forgot* y **enviaremos una solicitud de restablecimiento de contraseña** para el usuario *robert-dev-14529*. Interceptaremos la petición con *BurpSuite*:
 
@@ -303,7 +303,7 @@ Viajaremos a *http://10.10.11.188/reset?token=3Tli5nTeHPmUgEBmyQyGqmMEIfDIp%2BHW
 
 En mi caso, las credenciales de acceso serán `robert-dev-14529:r1pfr4n`.
 
-## Investigando Support Portal
+### Investigando Support Portal
 
 Nos **autenticamos en el panel de inicio de sesión** y deberíamos ver la siguiente imagen:
 
@@ -340,9 +340,9 @@ Seguramente, necesitaremos disponer de una **cuenta de administrador** para pode
 En este punto, vamos a intentar explotar alguna **vulnerabilidad en la tramitación de un nuevo *ticket***. Sabemos, por el reconocimiento del principio, que el servidor está utilizando un **web caché** llamado *Varnish*. Si el administrador **visualiza** el *ticket* que subimos y además **clica** en el enlace del parámetro *url*, podemos intentar explotar un *cache poisoning*.
 
 
-## Varnish Cache Poisoning
+### Varnish Cache Poisoning
 
-### Contexto
+#### Contexto
 
 El **envenenamiento de caché web** es una estrategia sofisticada que utiliza un atacante para aprovechar el funcionamiento de un **servidor web y su caché**, con el fin de enviar una respuesta *HTTP* maliciosa a otros usuarios. 
 
@@ -366,7 +366,7 @@ Para saber si dos **solicitudes** son **equivalentes**, **las cachés web utiliz
 
 Una **caché web envenenada** puede ser potencialmente un medio **devastador para distribuir numerosos tipos de ataques**, aprovechando vulnerabilidades como *XSS*, *inyección de JavaScript*, *Open Redirect*, y otros similares.
 
-### Pre-Explotación
+#### Pre-Explotación
 
 Vamos a fijarnos en las **cabeceras de respuesta** del servidor cuando estamos autenticados:
 
@@ -422,7 +422,7 @@ Pues bien, si ahora accedemos al mismo *endpoint* sin estar autenticados, deber�
 
 El *web cache* ha considerado que esta solicitud y las dos anteriores son **equivalentes** y nos ha enviado la misma respuesta. Esto sucede porque el *web cache* no está considerando la cabecera *Cookie* como *chache key*, y por tanto, no utiliza esta cabecera para determinar si dos solicitudes son iguales o diferentes. De este modo, hemos conseguido la *cookie* del usuario *robert-dev-14529* **sin estar autenticados en la web**. El proceso de explotación será lo mismo que hemos hecho ahora, pero la petición la tramitará el administrador y seremos capaces de conseguir su *cookie*.
 
-### Explotación
+#### Explotación
 
 Después de este pequeño inciso, imaginemos que el administrador, autenticado, visita un *endpoint* de la página web que **no** está **cacheado**, por ejemplo, *http://10.10.11.188/static/uarepwneed*. La petición viajará al servidor y posteriormente **se cacheará la respuesta**. Recordemos que si un usuario está autenticado, la respuesta enviará la *cookie* del usuario. La caché suministrará esta respuesta a aquellas solicitudes que considere que son **equivalentes**. Por lo tanto, si enviamos una solicitud al mismo *endpoint* y el *web cache* considera que la **solicitud** es **equivalente** a la que envió el administrador, el *web cache* nos enviará la respuesta cacheada con la *cookie* del administrador. Si los *chache keys* son el *host* y la **línea de solicitud**, la solicitud del administrador y la nuestra deberían ser consideradas equivalentes.
 
@@ -470,7 +470,7 @@ Finalmente, nos conectamos por *SSH*:
 
 ![imagen 37](Pasted image 20230301003657.png)
 
-## user.txt
+### user.txt
 
 Podemos encontrar la primera *flag* en el *homedir* del usuario *diego*:
 
@@ -479,11 +479,11 @@ diego@forgot:~$ cat user.txt
 56c0aead00efbebc78eb72982e084f40
 ```
 
-# Consiguiendo shell como root
+## Consiguiendo shell como root
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### sudoers
+#### sudoers
 
 El usuario *diego* tiene asignado el siguiente privilegio a nivel de *sudoers*:
 
@@ -491,7 +491,7 @@ El usuario *diego* tiene asignado el siguiente privilegio a nivel de *sudoers*:
 
 Puede ejecutar como *root*, sin proporcionar contraseña, */opt/security/ml_secrutiy.py*.
 
-### Inspeccionando ml_secrutiy.py
+#### Inspeccionando ml_secrutiy.py
 
 El contenido de *ml_secrutiy.py* es el siguiente:
 
@@ -522,7 +522,7 @@ f4 = '/opt/security/lib/KNeighborsClassifier.sav'
 f5 = '/opt/security/lib/RandomForestClassifier.sav'
 f6 = '/opt/security/lib/MLPClassifier.sav'
 
-# load the models from disk
+## load the models from disk
 loaded_model1 = pickle.load(open(f1, 'rb'))
 loaded_model2 = pickle.load(open(f2, 'rb'))
 loaded_model3 = pickle.load(open(f3, 'rb'))
@@ -531,7 +531,7 @@ loaded_model5 = pickle.load(open(f5, 'rb'))
 loaded_model6 = pickle.load(open(f6, 'rb'))
 model= Doc2Vec.load("/opt/security/lib/d2v.model")
 
-# Create a function to convert an array of strings to a set of features
+## Create a function to convert an array of strings to a set of features
 def getVec(text):
     features = []
     for i, line in enumerate(text):
@@ -552,7 +552,7 @@ def getVec(text):
         feature1 += int(lowerStr.count('img'))
         feature1 += int(lowerStr.count('iframe'))
         feature1 += int(lowerStr.count('marquee'))
-        # add feature for malicious method count
+        ## add feature for malicious method count
         feature2 = int(lowerStr.count('exec'))
         feature2 += int(lowerStr.count('fromcharcode'))
         feature2 += int(lowerStr.count('eval'))
@@ -567,19 +567,19 @@ def getVec(text):
         feature2 += int(lowerStr.count('onerror'))
         feature2 += int(lowerStr.count('onpage'))
         feature2 += int(lowerStr.count('confirm'))
-        # add feature for ".js" count
+        ## add feature for ".js" count
         feature3 = int(lowerStr.count('.js'))
-        # add feature for "javascript" count
+        ## add feature for "javascript" count
         feature4 = int(lowerStr.count('javascript'))
-        # add feature for length of the string
+        ## add feature for length of the string
         feature5 = int(len(lowerStr))
-        # add feature for "<script"  count
+        ## add feature for "<script"  count
         feature6 = int(lowerStr.count('script'))
         feature6 += int(lowerStr.count('<script'))
         feature6 += int(lowerStr.count('&lt;script'))
         feature6 += int(lowerStr.count('%3cscript'))
         feature6 += int(lowerStr.count('%3c%73%63%72%69%70%74'))
-        # add feature for special character count
+        ## add feature for special character count
         feature7 = int(lowerStr.count('&'))
         feature7 += int(lowerStr.count('<'))
         feature7 += int(lowerStr.count('>'))
@@ -592,10 +592,10 @@ def getVec(text):
         feature7 += int(lowerStr.count('+'))
         feature7 += int(lowerStr.count('='))
         feature7 += int(lowerStr.count('%3C'))
-        # add feature for http count
+        ## add feature for http count
         feature8 = int(lowerStr.count('http'))
         
-        # append the features
+        ## append the features
         featureVec = np.append(featureVec,feature1)
         featureVec = np.append(featureVec,feature2)
         featureVec = np.append(featureVec,feature3)
@@ -608,7 +608,7 @@ def getVec(text):
     return features
 
 
-# Grab links
+## Grab links
 conn = mysql.connector.connect(host='localhost',database='app',user='diego',password='dCb#1!x0%gjq')
 cursor = conn.cursor()
 cursor.execute('select reason from escalate')
@@ -632,7 +632,7 @@ ynew5 = loaded_model5.predict(Xnew)
 #6 MLPClassifier
 ynew6 = loaded_model6.predict(Xnew)
 
-# show the sample inputs and predicted outputs
+## show the sample inputs and predicted outputs
 def assessData(i):
     score = ((.175*ynew1[i])+(.15*ynew2[i])+(.05*ynew3[i])+(.075*ynew4[i])+(.25*ynew5[i])+(.3*ynew6[i]))
     if score >= .5:
@@ -643,7 +643,7 @@ def assessData(i):
 
 for i in range(len(Xnew)):
      t = threading.Thread(target=assessData, args=(i,))
-#     t.daemon = True
+##     t.daemon = True
      t.start()
 ```
 
@@ -703,7 +703,7 @@ El *script* anterior de *python* se encarga de analizar la información de la co
 
 Buscando en Internet, encuentro una **vulnerabilidad de inyección de código** asociada a la función *preprocess_input_exprs_arg_string* de la librería de *python* *tensorflow*.
 
-### preprocess_input_exprs_arg_string Code Injection
+#### preprocess_input_exprs_arg_string Code Injection
 
 El fragmento de código vulnerable de *ml_secrutity.py* es el siguiente:
 
@@ -732,8 +732,8 @@ def preprocess_input_exprs_arg_string(input_exprs_str):
   for input_raw in filter(bool, input_exprs_str.split(';')):
       ...
         input_key, expr = input_raw.split('=', 1)
-      # ast.literal_eval does not work with numpy expressions
-      input_dict[input_key] = eval(expr)  # pylint: disable=eval-used
+      ## ast.literal_eval does not work with numpy expressions
+      input_dict[input_key] = eval(expr)  ## pylint: disable=eval-used
   return input_dict
 ```
 
@@ -770,13 +770,13 @@ Si todo ha ido bien, la *bash* debería tener permisos *SUID*. Nos podemos *spaw
 
 ![imagen 44](Pasted image 20230301192310.png)
 
-## root.txt
+### root.txt
 
 La segunda *flag* se encuentra en el *homedir* del usuario *root*:
 
 ```bash
-bash-5.0# cd /root/
-bash-5.0# cat root.txt 
+bash-5.0## cd /root/
+bash-5.0## cat root.txt 
 7f7bfd993fee66685f3c7c890bc9ea1d
 ```
 

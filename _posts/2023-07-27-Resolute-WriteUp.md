@@ -11,11 +11,11 @@ img_path: /photos/2023-07-27-Resolute-WriteUp/
 
 El **[Anexo I](#anexo-i-volcado-del-ntds-para-persistencia-en-el-dominio)** profundiza en cómo volcar el NTDS para obtener **persistencia en el dominio** y control sobre las cuentas de usuario.
 
-# Reconocimiento
+## Reconocimiento
 
 En esta etapa, nos esforzamos por recopilar la mayor cantidad de información posible sobre nuestro objetivo.
 
-## Identificación del Sistema Operativo con Ping
+### Identificación del Sistema Operativo con Ping
 
 Empezamos por realizar un _**ping**_ a la máquina víctima. La finalidad del _ping_ no es solamente confirmar la conectividad, sino también deducir el sistema operativo que la máquina víctima está utilizando. ¿Cómo lo hace? Por medio del _**Time to Live (TTL)**_.
 
@@ -37,7 +37,7 @@ rtt min/avg/max/mdev = 113.199/113.199/113.199/0.000 ms
 
 Observamos que el _**TTL**_ es 127, lo que sugiere que nos enfrentamos a una máquina **Windows**.
 
-## Descubrimiento de puertos
+### Descubrimiento de puertos
 
 El próximo paso en nuestro proceso de exploración es descubrir los puertos abiertos en la máquina víctima. Para ello, utilizamos la herramienta **nmap**. Nmap nos permite identificar los **puertos abiertos** (status open) en la máquina, que podrían ser potenciales vectores de ataque.
 
@@ -173,7 +173,7 @@ El resultado de este escaneo revela información adicional sobre los **servicios
 | 5985, 47001 | WS-Management/WinRM | Estos servicios permiten el acceso remoto a los sistemas de administración. | Las vulnerabilidades o problemas de configuración pueden permitir la ejecución remota de código o la escalada de privilegios. |
 | 9389 | .NET Message Framing | Este puerto se utiliza para la comunicación en el marco de mensajes .NET. | Las vulnerabilidades pueden permitir ataques de inyección de código o la ejecución remota de código. |
 
-## Puertos 139/445 abiertos (SMB)
+### Puertos 139/445 abiertos (SMB)
 
 **El protocolo SMB (Server Message Block)**, que opera a través de los puertos 139 y 445, se selecciona para un reconocimiento inicial por su relevancia en la configuración de redes Windows y su conocido historial de vulnerabilidades explotables.
 
@@ -221,7 +221,7 @@ SMB1 disabled -- no workgroup available
 Esto sugiere que el acceso anónimo es factible, pero **no se logra visualizar ningún recurso compartido disponible**. Esto puede indicar que los recursos compartidos están restringidos a determinados usuarios, o simplemente que no existen en la máquina objetivo.
 
 
-## Puerto 135 abierto (RPC)
+### Puerto 135 abierto (RPC)
 
 El **RPC (Remote Procedure Call)** es una tecnología que se emplea en los sistemas operativos Windows para permitir que un programa ejecute código de manera remota. En este contexto, se explora el puerto 135 debido a las múltiples oportunidades que ofrece para la **enumeración de recursos del dominio**, incluyendo **usuarios, grupos, políticas** y más.
 
@@ -304,11 +304,11 @@ Este comando confirma si las credenciales son válidas o no. Lamentablemente, no
 
 No obstante, teniendo una contraseña potencial, es posible intentar un **password spraying** con esta **contraseña** y con la **lista de usuarios** extraída previamente, para identificar si, por casualidad, la contraseña es la misma para cualquier otro usuario del dominio.
 
-# Consiguiendo Shell Como Melanie
+## Consiguiendo Shell Como Melanie
 
 A través de la técnica de **password spraying**, aplicada sobre la contraseña encontrada anteriormente y la lista de usuarios enumerados, se logra encontrar las **credenciales** válidas para el usuario de dominio '**melanie**'.
 
-## Password Spraying en Detalle
+### Password Spraying en Detalle
 
 El **password spraying** es una técnica de prueba de contraseñas que, en lugar de intentar muchas contraseñas en una sola cuenta (un ataque de fuerza bruta), **prueba una sola contraseña** comúnmente utilizada **en muchas cuentas** antes de pasar a probar una siguiente contraseña. La estrategia se basa en la posibilidad de que entre un número suficientemente grande de usuarios, algunos de ellos usarán contraseñas comunes o débiles.
 
@@ -316,7 +316,7 @@ En este contexto específico, la técnica se aplicará a los usuarios del domini
 
 Para realizar la prueba de password spraying, se proponen dos herramientas: `CrackMapExec` y `Kerbrute`. Ambas cumplen el mismo propósito, pero proporcionan diferentes funcionalidades y pueden ser útiles en diferentes contextos.
 
-### CrackMapExec
+#### CrackMapExec
 
 La primera herramienta que se propone para este fin es `CrackMapExec`. El comando para realizar el password spraying con CrackMapExec es el siguiente:
 
@@ -333,7 +333,7 @@ El resultado de este comando indica que la contraseña '**Welcome123!**' es **v�
 
 ![imagen 2](Pasted image 20230726170601.png)
 
-### Kerbrute
+#### Kerbrute
 
 La segunda herramienta que se propone es `Kerbrute`, una utilidad diseñada para realizar ataques de fuerza bruta y password spraying a cuentas de usuario de Active Directory utilizando el protocolo Kerberos. Kerbrute es una [herramienta de ropnop](https://github.com/ropnop/kerbrute). El comando para realizar el password spraying con Kerbrute es el siguiente:
 
@@ -351,7 +351,7 @@ Al igual que con CrackMapExec, el resultado de este comando también muestra que
 
 ![imagen 2](Pasted image 20230727113205.png)
 
-## Obtención de Shell a Través de WinRM como Melanie
+### Obtención de Shell a Través de WinRM como Melanie
 
 Ahora que se ha obtenido las credenciales de `melanie`, es posible avanzar y explorar nuevas formas de explotación. En concreto, se buscará acceder a la máquina objetivo utilizando el servicio **Windows Remote Management (WinRM)**.
 
@@ -377,7 +377,7 @@ r1pfr4n@parrot> evil-winrm -i 10.10.10.169 -u 'melanie' -p 'Welcome123!'
 
 ![imagen 2](Pasted image 20230726170853.png)
 
-## user.txt
+### user.txt
 
 Encontraremos la **primera flag** en el directorio **Desktop** del usuario **melanie**:
 
@@ -386,11 +386,11 @@ PS C:\Users\melanie\Desktop> type user.txt
 46e5cc4399cb8***203bf21ff77cf8e1
 ```
 
-# Consiguiendo Shell como System
+## Consiguiendo Shell como System
 
 Después de obtener acceso con las credenciales de **Melanie**, el siguiente paso en este escenario es **escalar privilegios** dentro del dominio. Para esto, se debe realizar una serie de tareas de **enumeración** y explotación adicionales.
 
-## Enumeración del dominio con ldapdomaindump
+### Enumeración del dominio con ldapdomaindump
 
 Antes de recurrir a la enumeración automatizada con herramientas más avanzadas como **BloodHound**, es beneficioso utilizar otras herramientas menos complejas que puedan proporcionar información útil, como **ldapdomaindump**. Esta herramienta se utiliza para **extraer** diversos **datos del dominio** desde el Controlador de Dominio a través del protocolo **LDAP**. Su objetivo principal es crear una vista legible y accesible de la estructura del dominio, incluyendo **usuarios**, **grupos, controladores de dominio, política de contraseñas**, entre otros.
 
@@ -423,7 +423,7 @@ Además, Contractors también es miembro del grupo **Remote Management Users**, 
 
 Con esta información en mente, la **estrategia** es clara. El objetivo es **pivotar desde Melanie a Ryan**, **explotar** su pertenencia al grupo **DnsAdmins** para **escalar a Administrator**, y así obtener acceso completo al dominio. Por tanto, el siguiente paso crucial en la implementación de esta estrategia es **identificar un método efectivo para obtener las credenciales del usuario Ryan**. Con estas credenciales en mano, se abrirán nuevas posibilidades para avanzar hacia el control total del dominio.
 
-## Descubrimiento y validación de las credenciales de Ryan
+### Descubrimiento y validación de las credenciales de Ryan
 
 En una exploración más profunda del sistema, se encuentra una carpeta oculta en la raíz llamada `PSTranscripts`, descubierta utilizando el comando `dir -Force C:\` en PowerShell. Este comando lista el contenido de un directorio, en este caso, la raíz (C:\). El parámetro `-Force` muestra archivos y carpetas ocultas que normalmente no serían visibles.
 
@@ -460,7 +460,7 @@ El resultado de esta operación es el siguiente:
 ![imagen 2](Pasted image 20230726175248.png)
 
 
-## Posible Explotación del Grupo DnsAdmins
+### Posible Explotación del Grupo DnsAdmins
 
 En el transcurso de la enumeración del sistema con `ldapdomaindump`, se reveló un dato clave: el usuario `ryan` es miembro del grupo `Contractors`, que a su vez es miembro del grupo `DnsAdmins`. Esta pertenencia se puede confirmar con el comando `whoami /groups`, que proporciona un desglose detallado de los grupos a los que el usuario actual pertenece.
 
@@ -480,7 +480,7 @@ Es crucial entender que esta característica no es un error del sistema, sino un
 
 Para obtener más información sobre el grupo `DnsAdmins`, se puede consultar el enlace a la documentación oficial de Microsoft: [Understand Security Groups](https://learn.microsoft.com/es-es/windows-server/identity/ad-ds/manage/understand-security-groups#dnsadmins).
 
-## Explotación del Grupo DnsAdmins para Escalada de Privilegios
+### Explotación del Grupo DnsAdmins para Escalada de Privilegios
 
 Para explotar la vulnerabilidad asociada con el grupo `DnsAdmins`, se sigue un procedimiento que consta de varios pasos y culmina en la **adquisición de una shell remota con privilegios elevados**. Toda esta información ha sido extraída del artículo [Windows Privilege Escalation : DnsAdmins to DomainAdmin](https://www.hackingarticles.in/windows-privilege-escalation-dnsadmins-to-domainadmin/). La secuencia de pasos es la siguiente:
 
@@ -537,7 +537,7 @@ Es importante recordar que esta escalada de privilegios se logra gracias a la pe
 
 Aunque la segunda flag ha sido alcanzada, para conseguir una **persistencia robusta en el dominio** se recomienda consultar el [primer punto del Anexo](#anexo-i-volcado-del-ntds-para-persistencia-en-el-dominio). En él, se detalla cómo **volcar la base de datos NTDS** para obtener los hashes NT de todos los usuarios del dominio, lo que permitiría un control total sobre las cuentas de usuario del dominio.
 
-## root.txt
+### root.txt
 
 La segunda flag se encuentra en el directorio **Desktop** del usuario **Administrator**:
 
@@ -546,7 +546,7 @@ C:\Windows\system32> type C:\Users\Administrator\Desktop\root.txt
 d51176deda2ebf***1908f0fe0db6e35
 ```
 
-# Anexo I: Volcado del NTDS para Persistencia en el Dominio
+## Anexo I: Volcado del NTDS para Persistencia en el Dominio
 
 El NTDS (New Technology Directory Service) es un componente esencial de la infraestructura de Active Directory (AD) en un servidor Windows. Contiene toda la información sobre los objetos en un dominio, incluyendo los datos de los usuarios, grupos, contraseñas (en forma de hashes), y más. Para un atacante, obtener un volcado del NTDS puede proporcionar un control total y persistente sobre todas las cuentas de usuario en un dominio.
 

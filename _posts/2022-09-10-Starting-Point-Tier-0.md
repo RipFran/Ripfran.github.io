@@ -2,7 +2,7 @@
 title: Starting point Tier 0
 date: 2022-09-10 19:00:00 +/-TTTT
 categories: [HTB, Starting Point]
-tags: [redis,ftp,telnet,rdp,mongo]     # TAG names should always be lowercase
+tags: [redis,ftp,telnet,rdp,mongo]     ## TAG names should always be lowercase
 image: /photos/2022-09-10-Starting_point-Tier-0/htb.jpg
 ---
 
@@ -11,7 +11,7 @@ image: /photos/2022-09-10-Starting_point-Tier-0/htb.jpg
 
 En este post vamos a estar resolviendo las máquinas ***Tier 0* del *Starting Point* de *Hack the Box***. Son las máquinas **mas fáciles** de la plataforma y nos ayudarán a familiarizarnos con las técnicas básicas de **reconocimiento** y **penetración**. También haré una pequeña introducción de como funciona la plataforma y de como conectarse a la VPN de *HTB*.
 
-# Funcionamiento de HTB
+## Funcionamiento de HTB
 
 El objetivo de las máquinas de *HTB* es conseguir dos banderas: la **user flag** y la **root flag**, que son básicamente un archivo que contiene un *hash*.
 
@@ -23,7 +23,7 @@ En este punto ya habrás *pwneado* la máquina. Este es el reto que te pone *HTB
 
 La plataforma ofrece un **nivel 0 para aquellos usuarios mas principiantes**. Este nivel 0 que ellos llama ***Starting Point*** se divide en 3 partes: *Tier 0, Tier 1 y Tier 2*. La metodología en estas secciones varia un poco a la del resto de máquinas que no pertenecen al *Starting Point*. Con la finalidad de hacer una intrusion mas guiada, en vez de conseguir las típicas dos flags, la plataforma te hará una serie de preguntas sobre la máquina y las tendrás que contestar. No obstante, yo **solo me centraré en la forma de conseguir las flags de *root***.
 
-# Poniendo en marcha la VPN de HTB 
+## Poniendo en marcha la VPN de HTB 
 
 Para conectarte y a la plataforma *tendrás* que utilizar una VPN. La VPN es diferente dependiendo si estás comprometiendo máquinas de HTB, si estás resolviendo el *Starting Point* o si resuelves fortresses. 
 
@@ -33,7 +33,7 @@ Para conectarte y a la plataforma *tendrás* que utilizar una VPN. La VPN es dif
 
 **Nota**: Te recomiendo que para comprobar si tienes conexión enciendas una máquina y pruebes a enviarle un *ping*. Si el *ping* no llega es que hay algo mal configurado. Si tienes algún problema: [https://help.hackthebox.com/en/articles/5185536-connection-troubleshooting](https://help.hackthebox.com/en/articles/5185536-connection-troubleshooting).
 
-# Tier 0 
+## Tier 0 
 
 Como he comentado anteriormente, estas son las mas fáciles de la plataforma y recomiendo que empiecen por aquí todas aquellas personas que se adentran por primera vez en el mundo del *hacking*. Ahora bien, es bastante recomendable que se tengan nociones básicas de *Linux* (saber utilizar una terminal, comandos principales...).  
 
@@ -44,7 +44,7 @@ Resolveré tanto las máquinas gratis como las VIP. En cuanto al VIP de HTB lo r
 
 *   *Meow* es una máquina que únicamente tiene abierto el **puerto 23** , *Telnet*. *Telnet* sirve para establecer una conexión remota con otro equipo por la línea de comandos y controlarlo.  No es un protocolo seguro ya que la autenticación y todo el tráfico de datos se envía sin cifrar.
 
-## Fase de reconocimiento
+### Fase de reconocimiento
 El primer paso es saber si nos estamos enfrentando a una máquina **Windows o Linux**. Para ello enviaremos un *ping* a la máquina victima. Debemos tener en cuenta que el **Time To Live (TTL)** de los paquetes que envía una máquina **Linux es de 64** mientras que el de las **Windows es de 128**. Por lo tanto, si en el paquete recibido tiene un TTL **menor o igual a 64 la maquina será Linux**. Por el contrario, si el TTL es **menor o igual a 128 será una máquina Windows**. Como curiosidad, el TTL disminuye a medida que el paquete pasa por nodos intermediarios.
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/meow/ping.jpg)
@@ -84,7 +84,7 @@ El sentido de este proceso es que ahora vamos a ejecutar un análisis de las ver
 
 **Este proceso es el mismo para todas las máquinas: descubrir si es una máquina Windows o Linux, ver que puertos están abiertos y ver qué versión y qué servicio corren para cada uno de ellos.**
 
-## Puerto 23 abierto (Telnet)
+### Puerto 23 abierto (Telnet)
 
 Aunque ya lo sabíamos de antes, la captura **targeted** nos muestra que bajo el puerto 23 está corriendo el servicio de *telnet*.  
 Ahora nos podemos conectar a este servicio a través de la herramienta *telnet*.
@@ -105,10 +105,10 @@ A partir de aquí, ya seremos *root*, teniendo privilegios máximos sobre la má
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/meow/flag.jpg)
 
-# Fawn 
+## Fawn 
 *   *Fawn* es una máquina que tiene el **puerto 21**  abierto (FTP). Gracias a los *scripts* básicos de reconocimiento que lanza *nmap* podremos ver que tendremos acceso al servidor como el usuario *anonymous*. Este usuario no requiere de contraseña para *loguearse*. Una vez *logueados*, podremos visualizar la *flag*.
 
-## Fase de reconocimiento 
+### Fase de reconocimiento 
 
 Como la fase de reconocimiento inicial siempre es la misma y la he explicado detalladamente en la máquina anterior, ahora iré al grano. Primeramente enviamos un *ping* para saber si la máquina esta activa y para saber a qué sistema operativo nos estamos enfrentando:
 
@@ -126,7 +126,7 @@ El siguiente paso será lanzar una serie de scripts básicos de enumeración con
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/fawn/targeted.jpg)
 
-## Puerto 21 abierto (FTP)
+### Puerto 21 abierto (FTP)
 
 **-sCV** prueba con un conjunto de scripts de reconocimiento para cada puerto. Para el 21, lanza un script llamado ***ftp_anon***. Este script es un *checker* que nos dice si la sesión de anonymous esta habilitada o no. En este caso nos esta diciendo que si que está habilitada. Este usuario no requiere de contraseña para *loguearse*. Por lo tanto, accederemos al servidor a través del comando *ftp*, de la siguiente forma:
 
@@ -138,10 +138,10 @@ Por lo tanto haremos un *get flag.txt* y saldremos del FTP haciendo un *exit*. F
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/fawn/flag.jpg)
 
-# Dancing 
+## Dancing 
 *   Dancing es una máquina *Windows* que tiene varios puertos abiertos, entre ellos el **puerto 445**, que ofrece el servicio *SMB*. *SMB* proporciona acceso compartido a archivos e impresoras entre nodos de una red de sistemas. Dentro del directorio compartido *WorkSpaces* nos encontraremos dos carpetas: *Amy.J* y *James.P*. Al visualizar el contenido de la carpeta *James.P* veremos que se encuentra la *flag*.
 
-## Fase de reconocimiento
+### Fase de reconocimiento
 
 Una vez mas enviamos un ping a la máquina víctima para saber si tenemos conexión con ella y para saber su sistema operativo:
 
@@ -171,7 +171,7 @@ Ahora que ya sabemos mas o menos a lo que nos estamos enfrentando, vamos a proba
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/dancing/targeted.jpg)
 
-## Puerto 445 abierto (SMB)
+### Puerto 445 abierto (SMB)
 
 Ahora que ya lo tenemos claro todo, yo recomiendo siempre empezar por enumerar el servicio SMB. Primeramente tiraremos de la herramienta *crackmapexec* que nos enumerará de forma general el servicio. Entre otras cosas, podremos ver la arquitectura de la máquina y también el nombre del dominio.
 
@@ -203,7 +203,7 @@ Finalmente, ya con las dos carpetas y su contenido en nuestro ordenador personal
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/dancing/flag.jpg)
 
-# Redeemer 
+## Redeemer 
 
 *   *Redeemer* es una máquina que únicamente tiene el **puerto 6379** abierto. En este puerto corre el servicio de ***Redis***. Redis es un almacén de estructura de datos en memoria de código abierto, que se utiliza como base de datos, caché...  
 
@@ -211,7 +211,7 @@ Para visualizar la flag básicamente nos conectaremos al servicio como usuario d
 
 Como **extra** veremos una forma de ganar ejecución remota de comandos (RCE) en la máquina victima y podernos enviar una *reverse shell*.
 
-## Fase de reconocimiento
+### Fase de reconocimiento
 
 Como siempre empezaremos enviándole un *ping* a la máquina víctima. Podemos ver que tenemos conexión a ella y que nos estamos enfrentando a un *Linux*.
 
@@ -227,7 +227,7 @@ Procedemos a escanear todo el rango de puertos:
 
 Solamente nos descubre la versión. Estamos ante un *Redis key-value store 5.0.7*. 
 
-## Puerto 6379 abierto (Redis)
+### Puerto 6379 abierto (Redis)
 
 Ahora necesitamos saber la forma de auditar este servicio. Recomiendo tirar de [Hacktricks](https://book.hacktricks.xyz/network-services-pentesting/6379-pentesting-redis). *Hacktricks* es un recurso muy interesante que contiene mucha información sobre *pentesting*. Recomiendo siempre pensar en él cuando no sabemos como atacar un puerto.
 
@@ -250,7 +250,7 @@ Finalmente veremos que **la key 3 se llama *flag* y con el comando *GET flag* po
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/redeemer/redisflag.jpg)
 
-## Extra: Redis Remote Command Execution (RCE)
+### Extra: Redis Remote Command Execution (RCE)
 
 En esta sección vamos a estar explotando un ***Remote Command Execution en Redis***. Según el [repositorio](https://github.com/n0b0dyCN/redis-rogue-server) donde he sacado el POC, pone que funciona para versiones *<=5.0.5*. Aunque nosotros hemos visto que la versión de *Redis* que estamos auditando es la *5.0.7*, lo he probado y funciona perfectamente.
 
@@ -289,11 +289,11 @@ Este es el volcado */etc/passwd/* de la máquina víctima:
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/redeemer/passwd.jpg)
 
-# Explosion 
+## Explosion 
 
 *Explosion* es un máquina Windows que tiene varios puertos interesantes abiertosentre ellos el **puerto 3389** (RDP). Nos vamos a aprovechar de unas **credenciales débiles** para autenticarnos en el servicio RDP (Remote Desktop Protocol), adentrarnos en el sistema y poder  así visualizar la flag.
 
-## Fase de reconocimiento
+### Fase de reconocimiento
 
 Como siempre  procedemos a enviarle un *ping* a la máquina para saber si nos estamos enfrentando a un *Linux* o *Windows*. Recuerdo que esta primera fase de reconocimiento está mejor detallada en la primera máquina que hemos resuelto.
 
@@ -315,7 +315,7 @@ Menos el puerto 3389, todos los servicios que corren bajo estos puertos abiertos
 
 Teniendo toda esta información en cuenta empezaremos enumerando el servicio SMB.
 
-## Puerto 445 abierto (SMB)
+### Puerto 445 abierto (SMB)
 
 Recordemos que SBM era un protocolo para compartir ficheros en red.  
 Primero tiraremos de ***crackmapexec*** para enumerar de forma general el servicio:
@@ -330,7 +330,7 @@ Para enumerar los ficheros compartidos podemos utilizar *smbmap*. Como disponemo
 
 Vemos que no hay ningún recurso compartido interesante. 
 
-## Puerto 3389 abierto (RDP)
+### Puerto 3389 abierto (RDP)
 
 Ya que no hay ningún puerto interesante abierto mas, podemos probar a autenticarnos contra este servicio probando credenciales básicas como *Administrator*, *root*, *admin*...
 
@@ -345,10 +345,10 @@ Podemos ver que la *flag* se encuentra en el escritorio.
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/explosion/flag.jpg)
 
-# Preignition 
+## Preignition 
 *   *Preignition* es un sistema *Linux* que tiene el **puerto 80** expuesto, una pagina web *HTTP*. Aplicando un poco de reconocimiento podremos encontrar un directorio *admin.php* con un panel de *login*. Probando las credenciales débiles *admin/admin* nos podremos autenticar y posteriormente visualizar la *flag*.
 
-## Fase de reconocimiento
+### Fase de reconocimiento
 
 Primero, enviaremos un *ping* a la maquina víctima para saber si tenemos conexión con ella y averiguar a que sistema operativo nos estamos enfrentando. 
 
@@ -368,7 +368,7 @@ Ahora lanzamos un conjunto de *scripts* de reconocimiento para este puerto:
 
 Podemos ver que, entre otros *scripts*, nmap ha lanzado dos que se llaman *http-title* y *http-server-header*. Nos descubre que como servidor web esta máquina esta utilizando un *nginx* y que el título de la página web es *Welcome to Nginx!*
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
 Una buena práctica antes de abrir el navegador y visualizar la página web, es utilizar la herramienta *whatweb*, que nos descubre las tecnologías que está utilizando el servidor.
 
@@ -416,11 +416,11 @@ Finalmente, si probamos con *admin/admin* nos podremos autenticar y podremos vis
 
 ![](/photos/2022-09-10-Starting_point-Tier-0/preignition/flag.jpg)
 
-# Mongod 
+## Mongod 
 
 *   *Mongod*, la última máquina de esta sección, es una máquina *Linux* que tiene los puertos **22 y 27017** expuestos. El primero es SSH y en el segundo corre el servicio de **MongoDB**. Simplemente nos conectaremos a MongoDB y en una de sus bases de datos encontraremos la **flag**.
 
-## Fase de reconocimiento
+### Fase de reconocimiento
 
 Primero, enviaremos un ***ping*** a la maquina víctima para saber si tenemos conexión con ella y averiguar a que sistema operativo nos estamos enfrentando. 
 
@@ -437,7 +437,7 @@ Ahora analizaremos todo el **rango de puertos** en busca de aquellos que estén 
 Ahora lanzamos un conjunto de *scripts* de reconocimiento para estos puertos con el comando ```nmap -sCV -p22,27017 10.129.138.155 -oN targeted```. Si posteriormente listamos el archivo **targeted** obtenemos lo siguiente:
 
 ```ruby
-# Nmap 7.92 scan initiated Tue Oct  4 11:57:04 2022 as: nmap -sCV -p22,27017 -oN targeted 10.129.138.155
+## Nmap 7.92 scan initiated Tue Oct  4 11:57:04 2022 as: nmap -sCV -p22,27017 -oN targeted 10.129.138.155
 Nmap scan report for 10.129.138.155
 Host is up (0.060s latency).
 
@@ -1660,12 +1660,12 @@ PORT      STATE SERVICE VERSION
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-# Nmap done at Tue Oct  4 11:57:11 2022 -- 1 IP address (1 host up) scanned in 7.92 seconds
+## Nmap done at Tue Oct  4 11:57:11 2022 -- 1 IP address (1 host up) scanned in 7.92 seconds
 ```
 
 Entre otra mucha información, nos muestra las versiones de SSH y de mongoDB, que son **OpenSSH 8.2p1 Ubuntu 4ubuntu0.5** y **MongoDB 3.6.8** respectivamente. Como no disponemos de credenciales para autenticarnos por SSH, empezaremos auditando el servicio de mongoDB.
 
-## Puerto 27017 abierto (MongoDB)
+### Puerto 27017 abierto (MongoDB)
 
 MongoDB es una base de datos NoSQL. Una de sus principales diferencias con las bases de datos SQL es que no utilizan SQL como lenguaje principal de consultas. Para conectarnos a esta base de datos yo utilizare la herramienta **mongosh** (mongo shell), que me la he descargado de la página oficial de [mongo](https://www.mongodb.com/try/download/shell).
 
@@ -1704,6 +1704,6 @@ sensitive_information> db.flag.find().pretty()
 ```
 Y ya obtendremos la flag que nos piden. 
 
-# Final 
+## Final 
 
 Y aquí concluye este post de *Starting Point Tier 0*. Espero que os haya servido la explicación y si tenéis alguna duda me podéis contactar en ripfr4n0@gmail.com.

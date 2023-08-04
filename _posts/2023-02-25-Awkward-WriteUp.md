@@ -2,20 +2,20 @@
 title: Awkward WriteUp
 date: 2023-02-25 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [ssrf, lfi, command injection]     # TAG names should always be lowercase
+tags: [ssrf, lfi, command injection]     ## TAG names should always be lowercase
 image: awkward.jpg
 img_path: /photos/2023-02-25-Awkward-WriteUp/
 ---
 
 ***Awkward*** es una máquina *Linux* con dos servicios expuestos: *SSH* y *HTTP*. Gracias a la información que nos ofrece un **archivo de la página web**, seremos capaces de encontrar y autenticarnos en un panel de *login*. Una vez dentro, descubriemos un *endpoint* vulnerable a ***Server Side Request Forgery (SSRF)***, que nos permitirá descubrir un servicio interno. A través de la información que nos brinda este servicio, conseguiremos ***Local file Inclusion (LFI)*** explotando un *endpoint* de la API. Encontraremos las credenciales *SSH* del usuario *bean* en una nota de **xpad**. Para pivotar al usuario *root*, primero deberemos convertirnos en *www-data*. Explotaremos una **inyección de comandos** que se acontece en un **subdominio**, consiguiendo ***Remote Code Execution (RCE)*** como *www-data*. Finalmente, para conseguir **máximos privilegios**, nos aprovecharemos de un *script* que está ejecutando *root* a intervalos regulares de tiempo.
 
-# Clasificación de dificultad de la máquina
+## Clasificación de dificultad de la máquina
 
 ![imagen 1](stats.png)
 
-# Reconocimiento
+## Reconocimiento
 
-## ping
+### ping
 
 Mandamos un _ping_ a la máquina víctima, con la finalidad de conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_ y un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -32,7 +32,7 @@ rtt min/avg/max/mdev = 91.385/91.385/91.385/0.000 ms
 
 Comprobamos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port Discovery
+### Port Discovery
 
 Procedemos a escanear todo el rango de puertos de la máquina víctima, con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo hacemos con la herramienta ***nmap***.
 
@@ -74,9 +74,9 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 El puerto **22** es **SSH** y el puerto **80** **HTTP**. De momento, al no disponer de credenciales para autenticarnos por _SSH_, nos centraremos en auditar el puerto **80**.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
-### Tecnologías empleadas
+#### Tecnologías empleadas
 
 En primer lugar, utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -100,7 +100,7 @@ Por último, utilizaremos la extensión de navegador *Wappalyzer* para indagar u
 
 ***Vue.js*** es un *framework* de *JavaScript* utilizado para construir interfaces de usuario en aplicaciones web. Pasaremos ahora a investigar la página principal.
 
-### Investigando web
+#### Investigando web
 
 Al acceder a http://10.10.11.185 vemos lo siguiente:
 
@@ -116,7 +116,7 @@ Si inspeccionamos el código fuente, con *Ctrl+U*, nos encontramos con un **arch
 
 ![imagen 7](Pasted image 20230220102140.png)
 
-### Inspeccionando app.js
+#### Inspeccionando app.js
 
 *app.js* generalmente contiene código *JavaScript* personalizado que se utiliza para agregar funcionalidad interactiva al sitio web. Podremos visualizar su contenido viajando a *http://hat-valley.htb/js/app.js*:
 
@@ -324,7 +324,7 @@ Podemos utilizar `curl` y `jq` para mejorar la visualización de la información
 
 Tenemos **cuatro usuarios** y cuatro contraseñas *hasheadas*. Almacenaremos estos *hashes* en un archivo y **los intentaremos romper a través de un ataque por diccionario**.
 
-### Rompiendo hashes con John The Ripper
+#### Rompiendo hashes con John The Ripper
 
 Podemos intentar **romper** los *hashes* con **_John The Ripper_**. Pero antes, debemos descubrir que función de *hash* criptográfica se ha utilizado para *hashear* las contraseñas.  Utilizaremos *hash-identifier*:
 
@@ -357,7 +357,7 @@ Pasado un tiempo, nos descubre unas **credenciales**:
 
 La contraseña del usuario ***christopher.jones*** es ***chris123***. Utilizaremos estas credenciales para autenticarnos en el panel de login (*http://hat-valley.htb/hr*).
 
-### Autenticándonos en la web
+#### Autenticándonos en la web
 
 Una vez autenticados con las credenciales `christopher.jones:chris123`, vemos lo siguiente:
 
@@ -412,9 +412,9 @@ Un ***Open Redirect*** (redirección abierta) es una vulnerabilidad de seguridad
 
 Ahora bien, no conseguiremos ganar acceso a la máquina explotando el *Open Redirect*. Otra vulnerabilidad que se puede acontecer es un **SSRF**, forzando a que el sitio web haga peticiones a servicios internos de la máquina.
 
-# Ganando acceso como bean
+## Ganando acceso como bean
 
-## Explotando ataque SSRF
+### Explotando ataque SSRF
 
 ¿Que pasaría si pudiésemos modificar el valor del parámetro *url* por una URL que apunte a un servicio de la máquina víctima, por ejemplo *http://10.10.11.185*? Podríamos visualizar el código HTML de la web. En este caso, ya tenemos acceso al código fuente desde el navegador, pero, ¿**Y si corre otro servicio web en otro puerto de la máquina víctima en el que no tenemos acceso desde el exterior y pudiésemos ver su código fuente**? 
 
@@ -461,7 +461,7 @@ wget 'http://hat-valley.htb/api/store-status?url="http://localhost:3002"' -O ind
 
 Vamos a investigar este servicio.
 
-## Investigando Hat Valley API
+### Investigando Hat Valley API
 
 Desplegaremos un servidor web con *python*, por ejemplo, para inspeccionar el *index.html* desde el navegador:
 
@@ -576,9 +576,9 @@ Estos son los comentarios subidos por *christopher.jones*:
 
 A diferencia de */api/submit-leave*, podríamos utilizar la *'* y la */* para crear un *user* malicioso que nos **permita volcar archivos locales de la máquina víctima**.
 
-### Explotando Local File Inclusion (LFI)
+#### Explotando Local File Inclusion (LFI)
 
-#### Contexto
+##### Contexto
 
 Como he comentado anteriormente, `"awk '/" + user + "/' /var/www/private/leave_requests.csv"` busca y filtra líneas de texto en un archivo CSV ubicado en */var/www/private/leave_requests.csv*, en este caso que contengan el valor de la variable *user*.
 
@@ -604,7 +604,7 @@ La expresión regular */* utilizada en el comando no realiza una coincidencia co
 
 Ahora bien, para controlar el valor de la variable *user*, que es extraído de la *cookie* de sesión, deberíamos encontrar el *secreto* para forjar una *cookie* personalizada. Este secreto puede ser obtenido enumerando la máquina víctima o bien intentando romper la *cookie* a través de un **ataque por diccionario**.
 
-####  Obteniendo secreto a través de un ataque por diccionario
+#####  Obteniendo secreto a través de un ataque por diccionario
 
 El **secreto de una cookie** (también conocido como _cookie secret_ en inglés) es una cadena de caracteres aleatoria y secreta que se utiliza para firmar las _cookies_ en una aplicación web. Disponiendo del **secreto**, podemos forjar una _cookie_ con los datos que queramos.
 
@@ -626,7 +626,7 @@ john -w=/usr/share/wordlists/rockyou.txt cookie
 
 El secreto es ***123beany123***.
 
-#### Explotación
+##### Explotación
 
 Primero, intentaremos listar el */etc/passwd* de la máquina víctima. El valor *username* de la *cookie* lo deberemos modificar por `/' /etc/passwd '/`:
 
@@ -647,12 +647,12 @@ Para automatizar el proceso de creación de la *cookie* y el envío de la solict
 ```python
 #!/usr/bin/python3 
 
-# pip install colorama
+## pip install colorama
 
 import jwt,requests, signal, sys
 from colorama import Fore, Style
 
-# Ctrl + C
+## Ctrl + C
 def def_handler(sig, frame):
 	print("[!] Saliendo...")
 	sys.exit(1)
@@ -689,58 +689,58 @@ Tras mucha enumeración del sistema, encontramos en el *bashrc* del usuario *bea
 El archivo completo es el siguiente y lo podemos encontrar en */home/bean/.bashrc*:
 
 ```bash
-# ~/.bashrc: executed by bash(1) for non-login shells.
-# see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
-# for examples
+## ~/.bashrc: executed by bash(1) for non-login shells.
+## see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
+## for examples
 
-# If not running interactively, don't do anything
+## If not running interactively, don't do anything
 case $- in
     *i*) ;;
       *) return;;
 esac
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
+## don't put duplicate lines or lines starting with space in the history.
+## See bash(1) for more options
 HISTCONTROL=ignoreboth
 
-# append to the history file, don't overwrite it
+## append to the history file, don't overwrite it
 shopt -s histappend
 
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+## for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
 HISTSIZE=1000
 HISTFILESIZE=2000
 
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
+## check the window size after each command and, if necessary,
+## update the values of LINES and COLUMNS.
 shopt -s checkwinsize
 
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
+## If set, the pattern "**" used in a pathname expansion context will
+## match all files and zero or more directories and subdirectories.
 #shopt -s globstar
 
-# make less more friendly for non-text input files, see lesspipe(1)
+## make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
-# set variable identifying the chroot you work in (used in the prompt below)
+## set variable identifying the chroot you work in (used in the prompt below)
 if [ -z "${debian_chroot:-}" ] && [ -r /etc/debian_chroot ]; then
     debian_chroot=$(cat /etc/debian_chroot)
 fi
 
-# set a fancy prompt (non-color, unless we know we "want" color)
+## set a fancy prompt (non-color, unless we know we "want" color)
 case "$TERM" in
     xterm-color|*-256color) color_prompt=yes;;
 esac
 
-# uncomment for a colored prompt, if the terminal has the capability; turned
-# off by default to not distract the user: the focus in a terminal window
-# should be on the output of commands, not on the prompt
+## uncomment for a colored prompt, if the terminal has the capability; turned
+## off by default to not distract the user: the focus in a terminal window
+## should be on the output of commands, not on the prompt
 #force_color_prompt=yes
 
 if [ -n "$force_color_prompt" ]; then
     if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	# We have color support; assume it's compliant with Ecma-48
-	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
-	# a case would tend to support setf rather than setaf.)
+	## We have color support; assume it's compliant with Ecma-48
+	## (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	## a case would tend to support setf rather than setaf.)
 	color_prompt=yes
     else
 	color_prompt=
@@ -754,7 +754,7 @@ else
 fi
 unset color_prompt force_color_prompt
 
-# If this is an xterm set the title to user@host:dir
+## If this is an xterm set the title to user@host:dir
 case "$TERM" in
 xterm*|rxvt*)
     PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
@@ -763,7 +763,7 @@ xterm*|rxvt*)
     ;;
 esac
 
-# enable color support of ls and also add handy aliases
+## enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
     test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
     alias ls='ls --color=auto'
@@ -775,33 +775,33 @@ if [ -x /usr/bin/dircolors ]; then
     alias egrep='egrep --color=auto'
 fi
 
-# colored GCC warnings and errors
+## colored GCC warnings and errors
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
 
-# some more ls aliases
+## some more ls aliases
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
 
-# custom
+## custom
 alias backup_home='/bin/bash /home/bean/Documents/backup_home.sh'
 
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
+## Add an "alert" alias for long running commands.  Use like so:
+##   sleep 10; alert
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 
-# Alias definitions.
-# You may want to put all your additions into a separate file like
-# ~/.bash_aliases, instead of adding them here directly.
-# See /usr/share/doc/bash-doc/examples in the bash-doc package.
+## Alias definitions.
+## You may want to put all your additions into a separate file like
+## ~/.bash_aliases, instead of adding them here directly.
+## See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
 fi
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
+## enable programmable completion features (you don't need to enable
+## this, if it's already enabled in /etc/bash.bashrc and /etc/profile
+## sources /etc/bash.bashrc).
 if ! shopt -oq posix; then
   if [ -f /usr/share/bash-completion/bash_completion ]; then
     . /usr/share/bash-completion/bash_completion
@@ -838,7 +838,7 @@ Previamente, forjaremos una *cookie* del siguiente modo:
 
 ![imagen 34](Pasted image 20230225123720.png)
 
-## Investigando bean_backup_final.tar.gz 
+### Investigando bean_backup_final.tar.gz 
 
 Descomprimimos el archivo y deberíamos tener acceso a la siguiente información:
 
@@ -869,7 +869,7 @@ Vemos unas credenciales en esta nota: *bean.hill:014mrbeanrules!#P*. Las utiliza
 
 ![imagen 37](Pasted image 20230225124229.png)
 
-## user.txt
+### user.txt
 
 Encontraremos la primera *flag* en el *homedir* del usuario *bean*:
 
@@ -878,11 +878,11 @@ bean@awkward:~$ cat user.txt
 d57ef19a6e43d3158693e38dd90f310b
 ```
 
-# Consiguiendo shell como www-data
+## Consiguiendo shell como www-data
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### Consiguiendo credenciales de acceso a store.hat-valley.htb
+#### Consiguiendo credenciales de acceso a store.hat-valley.htb
 
 Recordemos que para acceder a http://store.hat-valley.htb necesitábamos autenticarnos. Podemos mirar si se las credenciales se encuentran en los archivos de configuración de *nginx*. La ruta de configuración de los diferentes dominios se encuentra en */etc/nginx/sites-available/*:
 
@@ -900,7 +900,7 @@ server {
     location / {
         index index.php index.html index.htm;
     }
-    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+    ## pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
     #
     location ~ /cart/.*\.php$ {
 	return 403;
@@ -916,11 +916,11 @@ server {
         fastcgi_param  SCRIPT_FILENAME  $realpath_root$fastcgi_script_name;
         include        fastcgi_params;
     }
-    # deny access to .htaccess files, if Apache's document root
-    # concurs with nginx's one
+    ## deny access to .htaccess files, if Apache's document root
+    ## concurs with nginx's one
     #
     #location ~ /\.ht {
-    #    deny  all;
+    ##    deny  all;
     #}
 }
 ```
@@ -934,7 +934,7 @@ admin:$apr1$lfvrwhqi$hd49MbBX3WNluMezyjWls1
 
 El usuario que se utiliza para autenticarse en http://store.hat-valley.htb es *admin*, pero la contraseña está *hasheada*. La podríamos intentar romper, pero la contraseña es bastante robusta y, por tanto, no lo conseguiremos. Podemos verificar si se está aplicando reutilización de credenciales utilizando la contraseña de *bean.hill* o *christopher.jones*. Las credenciales correctas serán `admin:014mrbeanrules!#P`. 
 
-### inspeccionando http://store.hat-valley.htb 
+#### inspeccionando http://store.hat-valley.htb 
 
 La tienda tiene el siguiente aspecto:
 
@@ -1112,7 +1112,7 @@ Por ejemplo, en mi máquina obtengo el siguiente resultado al ejecutar los dos c
 
 Por lo tanto, se puede acontecer una ejecución de comandos en el parámetro *item* de *delete from cart*.
 
-#### Inyección de comandos de delete from cart
+##### Inyección de comandos de delete from cart
 
 Por si alguien se lo pregunta, solo podremos inyectar comandos en el parámetro *item*, ya que *user* tiene que ser un valor de usuario que exista. 
 
@@ -1161,9 +1161,9 @@ export SHELL=bash
 
 También deberíamos ajustar el número de filas y de columnas. Con el comando *stty size* podremos consultar las filas y columnas de nuestra consola y con el comando *stty rows \<n.filas\> cols \<n.columnas\>* podremos ajustar estos campos en la *shell* recibida.
 
-# Consiguiendo shell como root
+## Consiguiendo shell como root
 
-## Reconocimiento del sistema con pspy
+### Reconocimiento del sistema con pspy
 
 **_Pspy_** es una herramienta que nos permite ver qué tareas se están ejecutando a intervalos regulares de tiempo y por qué usuarios. Nos la podemos descargar del siguiente [repositorio](https://github.com/DominicBreuker/pspy).
 
@@ -1241,23 +1241,23 @@ Se le han asignado permisos SUID. Con el comando `bash -p` nos podremos *spawnea
 
 ![imagen 62](Pasted image 20230225152910.png)
 
-## root.txt
+### root.txt
 
 La segunda *flag* se encuentra en el *homedir* de *root*:
 
 ```bash
-bash-5.1# cat /root/root.txt 
+bash-5.1## cat /root/root.txt 
 ce61b62d278c54b4a778254167fb6c07
 ```
 
-# Anexo
+## Anexo
 
-## Investigando notify.sh
+### Investigando notify.sh
 
 Este es el contenido del *script* *notify.sh*, ejecutado por *root*, que se encarga de enviar un correo electrónico cuando se produce un cambio en el archivo *leave_requests.csv*, es decir, cuando se sube un nuevo comentario en *http://hat-valley.htb/leave*:
 
 ```bash
-bash-5.1# cat notify.sh 
+bash-5.1## cat notify.sh 
 #!/bin/bash
 
 inotifywait --quiet --monitor --event modify /var/www/private/leave_requests.csv | while read; do

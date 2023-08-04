@@ -13,11 +13,11 @@ En este contexto, destaca el usuario `svc_loanmgr`, que posee permisos DCSync so
 
 Para una mayor profundidad en el estudio de la máquina, se han incluido tres Anexos. En el **[Anexo I](#anexo-i-comprensión-y-explotación-del-kerberoasting)**, se detalla el ataque ***Kerberoasting***. En el **[Anexo II](#anexo-ii-ataque-kerberoasting-y-asreproast-utilizando-adsearch-y-rubeus)**, se presentan otras formas de explotar el ASREPRoasting y el Kerberoasting utilizando la herramienta ***Rubeus***. Por último, el **[Anexo III](#anexo-iii-ataque-dcsync-utilizando-mimikatz)** ofrece una alternativa para explotar el ataque DCSync mediante el uso de la herramienta ***mimikatz***.
 
-# Reconocimiento
+## Reconocimiento
 
 En esta etapa, nos esforzamos por recopilar la mayor cantidad de información posible sobre nuestro objetivo.
 
-## Identificación del Sistema Operativo con Ping
+### Identificación del Sistema Operativo con Ping
 
 Empezamos por realizar un _**ping**_ a la máquina víctima. La finalidad del _ping_ no es solamente confirmar la conectividad, sino también deducir el sistema operativo que la máquina víctima está utilizando. ¿Cómo lo hace? Por medio del _**Time to Live (TTL)**_.
 
@@ -38,7 +38,7 @@ rtt min/avg/max/mdev = 113.251/113.251/113.251/0.000 ms
 
 Observamos que el _**TTL**_ es 127, lo que sugiere que nos enfrentamos a una máquina **Windows**.
 
-## Descubrimiento de puertos
+### Descubrimiento de puertos
 
 El próximo paso en nuestro proceso de exploración es descubrir los puertos abiertos en la máquina víctima. Para ello, utilizamos la herramienta **nmap**. Nmap nos permite identificar los **puertos abiertos** (status open) en la máquina, que podrían ser potenciales vectores de ataque.
 
@@ -157,7 +157,7 @@ El resultado de este escaneo revela información adicional sobre los servicios e
 | 9389                                          | .NET Message Framing              | Este puerto se utiliza para la comunicación en el marco de mensajes .NET.                                                       | Las vulnerabilidades pueden permitir ataques de inyección de código o la ejecución remota de código.                                           |
 | 80 | http | Microsoft IIS httpd 10.0 | Un servidor web puede albergar páginas web, aplicaciones web, interfaces de API y más. Las vulnerabilidades en el servidor web pueden permitir ataques de inyección, divulgación de información y más. |                                              |                                   |                                                                                                                                 |                                                                                                                                                |
 
-## Puertos 139/445 abiertos (SMB)
+### Puertos 139/445 abiertos (SMB)
 
 **El protocolo SMB (Server Message Block)**, que opera a través de los puertos 139 y 445, se selecciona para un reconocimiento inicial por su relevancia en la configuración de redes Windows y su conocido historial de vulnerabilidades explotables.
 
@@ -201,7 +201,7 @@ SMB1 disabled -- no workgroup available
 
 Esto sugiere que el acceso anónimo es factible, pero **no se logra visualizar ningún recurso compartido disponible**. Esto puede indicar que los recursos compartidos están restringidos a determinados usuarios, o simplemente que no existen en la máquina objetivo.
 
-## Puerto 135 abierto (RPC)
+### Puerto 135 abierto (RPC)
 
 **RPC (Remote Procedure Call)** es una tecnología utilizada en los sistemas operativos Windows para permitir que un programa ejecute código de manera remota. En este contexto, el puerto 135 se ha explorado porque ofrece múltiples oportunidades para la **enumeración de recursos del dominio**, incluyendo **usuarios, grupos, políticas** y más.
 
@@ -224,7 +224,7 @@ rpcclient $> enumdomgroups
 
 Estos resultados indican que, en este caso, los **permisos para enumerar los usuarios y grupos del dominio están restringidos**, incluso para un usuario invitado.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
 El **puerto 80**, conocido por ser el puerto estándar para las comunicaciones HTTP no cifradas, fue **identificado como abierto** durante la fase de exploración inicial. 
 
@@ -336,13 +336,13 @@ kerb
 
 Con esta lista ampliada de posibles nombres de usuario, se dispone de una base sólida para intentar **explotar un ataque ASREPRoast** en futuras etapas del proceso de reconocimiento.
 
-# Consiguiendo shell como fsmith
+## Consiguiendo shell como fsmith
 
 Una vez que tengamos nuestra lista de usuarios potencialmente válidos, estamos en posición de intentar un ataque ASREPRoast. Este ataque se basa en explotar una debilidad específica en el protocolo de autenticación Kerberos. 
 
 Se explicará primero como funciona el protocolo Kerberos, luego en qué consiste el ataque ASREPRoast y finalmente se explotará el ataque para conseguir la contraseña del usuario *fsmith*.
 
-## Protocolo Kerberos
+### Protocolo Kerberos
 
 El protocolo **Kerberos** proporciona autenticación mutua entre un cliente y un servidor en una red no segura. Esto se logra mediante el uso de tickets de concesión de servicio (TGS) y tickets de concesión de autenticación (TGT). A continuación se desglosan todos los pasos de la autenticación de Kerberos, teniendo en cuenta la siguiente imagen:
 
@@ -355,7 +355,7 @@ El protocolo **Kerberos** proporciona autenticación mutua entre un cliente y un
 5.  **Solicitud de servicio**: El cliente se comunica con el servidor enviando el ticket de servicio y un nuevo autenticador cifrado con la nueva clave de sesión.
 6.  **Acceso al servicio**: El servidor SQL descifra el ticket de servicio con su clave, obteniendo la nueva clave de sesión, y luego descifra el autenticador. Si la solicitud es válida, el cliente es autenticado y puede acceder al servicio.
 
-## ASREPRoast o AS-REP Roasting en detalle
+### ASREPRoast o AS-REP Roasting en detalle
 
 ASREPRoast, también conocido como AS-REP Roasting, debe su nombre a la etapa de respuesta AS-REP del protocolo Kerberos, que es donde se lleva a cabo el ataque. Se centra en explotar una característica específica de la implementación de Kerberos: la capacidad de desactivar la **"preautenticación"**.
 
@@ -367,7 +367,7 @@ Un atacante puede solicitar un TGT para dicho usuario y recibir la clave de sesi
 
 El ataque ASREPRoast implica la captura de estas **claves de sesión cifradas** y su descifrado fuera de línea mediante técnicas de fuerza bruta. Como la clave de la sesión está cifrada con la contraseña del usuario, descifrar la clave de sesión resulta en obtener la contraseña del usuario.
 
-## Explotación de ASREPRoast para obtener las credenciales de fsmith
+### Explotación de ASREPRoast para obtener las credenciales de fsmith
 
 Disponiendo de la lista de posibles nombres de usuario generada en la etapa de reconocimiento, se procede a intentar un **ataque** **ASREPRoast**. Este tipo de ataque involucra la identificación de usuarios que no tienen establecida la preautenticación y luego captura su clave de sesión cifrada para descifrarla fuera de línea. El primer paso en este proceso es identificar cuáles usuarios son válidos y cuáles tienen la configuración de **UF_DONT_REQUIRE_PREAUTH**, lo que permitirá **obtener la clave de sesión**.
 
@@ -413,7 +413,7 @@ Este comando utiliza `john` para realizar un ataque de fuerza bruta en el hash o
 
 ![imagen 8](Pasted image 20230718005418.png)
 
-## Obtención de shell a través de WinRM como fsmith
+### Obtención de shell a través de WinRM como fsmith
 
 Ahora que se ha obtenido las credenciales de `fsmith`, es posible avanzar y explorar nuevas formas de explotación. En concreto, se buscará acceder a la máquina objetivo utilizando el servicio **Windows Remote Management (WinRM)**.
 
@@ -441,7 +441,7 @@ r1pfr4n@parrot> evil-winrm -i 10.10.10.175 -u 'fsmith' -p 'Thestrokes23'
 
 Es importante notar que, además de la ruta de ataque utilizada en este escenario, hay otra que podría ser viable: **el ataque Kerberoasting**. De hecho, hay una **cuenta susceptible a Kerberoasting** en el sistema, pero no tiene privilegios elevados. Sin embargo, dado que la máquina objetivo no se resolvió a través de este método en este caso, se ha decidido incluir el ataque Kerberoasting en [Anexo I: Comprensión y explotación del Kerberoasting](#anexo-i-comprensión-y-explotación-del-kerberoasting).
 
-## user.txt
+### user.txt
 
 Encontraremos la **primera flag** en el directorio **Desktop** del usuario **fsmith**:
 
@@ -450,23 +450,23 @@ PS C:\Users\FSmith\Desktop> type user.txt
 494d76da2c10****65fad9398241be34
 ```
 
-# Consiguiendo shell como Administrador del dominio
+## Consiguiendo shell como Administrador del dominio
 
 Después de obtener una *shell* inicial con el usuario *fsmith*, el siguiente objetivo es escalar privilegios hasta conseguir una *shell* como **administrador del dominio**. Para esto, se debe realizar una serie de tareas de enumeración y explotación adicionales.
 
-## Enumeración
+### Enumeración
 
 El primer paso en este proceso de escalado de privilegios es la enumeración adicional del Controlador de Dominio (DC). 
 
-### Enumeración con BloodHound
+#### Enumeración con BloodHound
 
 Durante el proceso de infiltración en una red, especialmente en entornos Active Directory, es esencial realizar una tarea de enumeración detallada. En este contexto, la utilización de **BloodHound** es de gran valor, dado que permite visualizar de forma gráfica las **relaciones existentes entre los elementos del dominio** (usuarios, grupos, computadoras, etc.), facilitando el **descubrimiento de caminos de ataque**.
 
-#### ¿Qué es BloodHound y cómo funciona?
+##### ¿Qué es BloodHound y cómo funciona?
 
 **BloodHound** es una herramienta de análisis gráfico de relaciones en Active Directory que utiliza la *teoría de grafos* para descubrir las posibles vías de ataque menos privilegiadas que pueden llevar a una entidad a obtener más privilegios dentro del dominio. La herramienta utiliza su colector, **SharpHound**, para recolectar información del dominio y luego presenta esta información en una interfaz gráfica que facilita su análisis.
 
-#### Recolección de información con SharpHound
+##### Recolección de información con SharpHound
 
 Para obtener la información necesaria, se utiliza **SharpHound**. Esta herramienta se puede encontrar en versión [.exe](https://github.com/BloodHoundAD/BloodHound/blob/master/Collectors/SharpHound.exe) o bien en versión [.ps1](https://github.com/BloodHoundAD/BloodHound/blob/master/Collectors/SharpHound.ps1). 
 
@@ -499,7 +499,7 @@ PS C:\Users\FSmith\Desktop> download C:\Users\FSmith\Desktop\20230715012300_Bloo
 
 Más información sobre la utilización de **SharpHound** y posibles configuraciones de la herramienta se puede encontrar en la página de [The Hacker Recipes](https://www.thehacker.recipes/ad/recon/bloodhound).
 
-#### Configuración de Neo4j y BloodHound
+##### Configuración de Neo4j y BloodHound
 
 **BloodHound** necesita una base de datos para operar, y utiliza **Neo4j**, una base de datos gráfica. Si no está instalado, se puede seguir la guía de instalación de la [documentación oficial de Neo4j](https://neo4j.com/docs/operations-manual/current/installation/linux/debian/#debian-installation). 
 
@@ -514,7 +514,7 @@ sudo apt-get install neo4j=1:5.6.0
 
 Una vez instalado **Neo4j**, se debe ejecutar con el comando `sudo neo4j console`. Si es la primera vez que se inicia, se deberá **configurar un usuario y una contraseña** que se usarán después en BloodHound. El panel de configuración de Neo4j suele residir en http://localhost:7474/.
 
-#### Ejecución de BloodHound
+##### Ejecución de BloodHound
 
 Con **Neo4j** funcionando, ya se puede iniciar **BloodHound**. Para ello, es necesario descargar la versión adecuada para el sistema operativo desde el [repositorio oficial de BloodHound](https://github.com/BloodHoundAD/BloodHound/releases). Una vez descargado y descomprimido, se encontrará el ejecutable de BloodHound. Al ejecutarlo, aparecerá una pantalla de inicio de sesión en la que se deben proporcionar las credenciales configuradas en Neo4j.
 
@@ -524,7 +524,7 @@ Una vez se ha accedido a **BloodHound**, en la parte superior derecha, se debe p
 
 Al finalizar la carga de los archivos, ya se puede comenzar con el análisis y reconocimiento del dominio utilizando **BloodHound**.
 
-#### Identificando el camino al dominio con BloodHound
+##### Identificando el camino al dominio con BloodHound
 
 Comenzando con el análisis, es una buena práctica **marcar** los usuarios cuyas credenciales se han obtenido como **Owned**. En este caso, se marca al usuario **fsmith**. Esta acción no es solo una cuestión de llevar un registro, sino que también abre la posibilidad de utilizar algunas consultas adicionales en **BloodHound**, que pueden revelar rutas de ataque potencialmente ocultas:
 
@@ -540,7 +540,7 @@ Tener **permisos de DCSync** es altamente significativo en un contexto de seguri
 
 No obstante, en este punto de la exploración, aún **no se poseen las credenciales** de **svc_loanmgr**. Para intentar obtenerlas, se decide proceder con la enumeración del controlador de dominio utilizando una herramienta llamada **winPEAS.exe**.
 
-### Enumeración del sistema con winPEAS.exe
+#### Enumeración del sistema con winPEAS.exe
 
 [winPEAS](https://github.com/carlospolop/PEASS-ng/tree/master/winPEAS) es una herramienta de enumeración de posibles vectores de escalada de privilegios. Su objetivo es buscar configuraciones erróneas, contraseñas en texto plano, tokens de acceso, y cualquier otro elemento que pueda ser útil para elevar privilegios en un sistema Windows.
 
@@ -556,7 +556,7 @@ Posteriormente, se ejecutará el programa de la siguiente forma:
 PS C:\Users\FSmith\Desktop> .\winPEAS.exe
 ```
 
-### Identificación de credenciales AutoLogon con winPEAS.exe
+#### Identificación de credenciales AutoLogon con winPEAS.exe
 
 Después de ejecutar winPEAS.exe, la herramienta identifica un conjunto de **credenciales AutoLogon almacenadas** en el sistema. Las credenciales descubiertas son las siguientes: `svc_loanmanager:Moneymakestheworldgoround!`.
 
@@ -585,7 +585,7 @@ r1pfr4n@parrot> crackmapexec smb 10.10.10.175 -u 'svc_loanmgr' -p 'Moneymakesthe
 
 Si la salida de este comando contiene un '**+**', significa que las credenciales son válidas y proporcionan acceso. Con esta validación, se puede proceder al siguiente paso, que implica el uso de estas credenciales en el **ataque DCSync** para obtener el **hash NT del administrador del dominio**.
 
-### Obteniendo el Hash NT del Administrador del Dominio
+#### Obteniendo el Hash NT del Administrador del Dominio
 
 Se puede utilizar `secretsdump.py` en la máquina atacante para volcar el **NTDS** y obtener los hashes NT de todos los usuarios del dominio, incluido el del **administrador**:
 
@@ -615,7 +615,7 @@ r1pfr4n@parrot> evil-winrm -i 10.10.10.175 -u 'Administrator' -H '823452073d75b9
 
 Es importante mencionar que en el [Anexo III](#anexo-iii-ataque-dcsync-utilizando-mimikatz) se presenta una alternativa para realizar el ataque DCSync usando **mimikatz** en lugar de `secretsdump.py`. La elección de la herramienta dependerá de las condiciones específicas del entorno y las preferencias del atacante.
 
-## root.txt
+### root.txt
 
 La segunda flag se encuentra en el directorio **Desktop** del usuario **Administrator**:
 
@@ -624,11 +624,11 @@ PS C:\Users\Administrator\Desktop> type root.txt
 3c833ce590ee7388f1d543f512d9691a
 ```
   
-# Anexo I: Comprensión y explotación del Kerberoasting
+## Anexo I: Comprensión y explotación del Kerberoasting
 
 En el contexto de este escenario en particular, la explotación del Kerberoasting no es necesaria para ganar acceso a la máquina ni para escalar privilegios. El usuario objetivo del Kerberoasting, **hsmith**, no tiene ningún privilegio interesante ni está asignado a ningún grupo de particular interés. Esta sección se incluye con el propósito de **explorar** y **explicar el concepto del Kerberoasting**, enriqueciendo así el análisis de las posibles técnicas de ataque en un entorno Windows.
 
-## Kerberoasting en detalle
+### Kerberoasting en detalle
 
 **Kerberoasting** es una técnica de ataque en la cual un atacante explota el protocolo de autenticación Kerberos de Windows para extraer hashes de contraseñas de cuentas de servicio. Este ataque se realiza solicitando tickets de servicio (TGS, Ticket-Granting Service) para todas las cuentas de servicio disponibles en el dominio, los cuales pueden ser descifrados fuera de línea para obtener el hash de la contraseña correspondiente. 
 
@@ -649,7 +649,7 @@ Por lo tanto, el Kerberoasting es un **ataque de post-explotación**, es decir, 
 En la próxima sección, se detallará cómo se llevó a cabo un ataque de **Kerberoasting en la máquina objetivo**.
 
 
-## Explotación de Kerberoasting para obtener las credenciales de hsmith
+### Explotación de Kerberoasting para obtener las credenciales de hsmith
 
 El Kerberoasting es una técnica que se puede explotar para obtener contraseñas de cuentas de servicio no convencionales, aquellas que se configuran con la opción `ServicePrincipalName` (SPN). Un SPN es esencialmente un identificador único asignado a un servicio que se ejecuta en un servidor dentro de un dominio de Active Directory. Este identificador permite a los clientes de la red identificar y autenticarse con ese servicio.
 
@@ -697,13 +697,13 @@ Al final, se descubrió que la contraseña de la cuenta de servicio **hsmith** e
 
 Una vez obtenidas estas credenciales, se pueden utilizar de la misma forma que las credenciales de cualquier otro usuario del dominio. Sin embargo, las cuentas de servicio como **hsmith** pueden tener privilegios o accesos específicos dependiendo de su configuración y uso. En este caso, obtener las credenciales de **hsmith** no proporcionó acceso o privilegios adicionales. Sin embargo, en otros escenarios, esta técnica podría permitir comprometer cuentas de servicio con privilegios más elevados.
 
-# Anexo II: Ataque Kerberoasting y ASREPRoast utilizando ADSearch y Rubeus
+## Anexo II: Ataque Kerberoasting y ASREPRoast utilizando ADSearch y Rubeus
 
 En ciertas situaciones, un ataque Kerberoasting o ASREPRoast no se puede llevar a cabo desde la máquina del atacante. Esto suele suceder cuando el **Domain Controller (DC) no expone el puerto 88** (el puerto utilizado por el protocolo Kerberos) a la red externa, pero sí lo hace a la red interna. Este tipo de configuración puede ser una medida de seguridad para limitar las posibles vías de ataque al DC.
 
 En este contexto, **el atacante necesita estar dentro de la red interna para realizar estos ataques**. Por eso, estas técnicas se suelen usar en ataques post-explotación, es decir, después de que el atacante ya ha ganado acceso a una máquina interna del dominio.
 
-## ADSearch.exe y Rubeus.exe para ataques granulares
+### ADSearch.exe y Rubeus.exe para ataques granulares
 
 El uso de las herramientas **ADSearch.exe** y **Rubeus.exe** proporciona una forma más **granular** y controlada de realizar los **ataques Kerberoasting y ASREPRoast**. Ambas herramientas se pueden ejecutar desde una máquina Windows dentro del dominio.
 
@@ -713,7 +713,7 @@ El uso de las herramientas **ADSearch.exe** y **Rubeus.exe** proporciona una for
 
 Estas herramientas se pueden obtener del repositorio de GitHub en el siguiente enlace: [SharpCollection](https://github.com/Flangvik/SharpCollection/tree/master/NetFramework_4.7_x64).
 
-## ASREPRoasting
+### ASREPRoasting
 
 Para identificar las cuentas que son susceptibles a ASREPRoast, se utiliza el siguiente comando con `ADSearch.exe`:
 
@@ -749,7 +749,7 @@ Al final, `hashcat` es capaz de descifrar la contraseña de la cuenta `fsmith`, 
 
 ![imagen 26](Pasted image 20230718013456.png)
 
-## Kerberoasting 
+### Kerberoasting 
 
 Para identificar las cuentas que tienen un Service Principal Name (SPN) asociado, lo cual indica que pueden ser susceptibles a Kerberoasting, se utiliza el siguiente comando con `ADSearch.exe`:
 
@@ -785,7 +785,7 @@ Al final, `hashcat` es capaz de descifrar la contraseña de la cuenta `hsmith`, 
 
 ![imagen 29](Pasted image 20230718012820.png)
 
-# Anexo III: Ataque DCSync utilizando mimikatz
+## Anexo III: Ataque DCSync utilizando mimikatz
 
 Aunque en la ruta principal hacia el control del dominio se utilizó la herramienta `secretsdump.py` para explotar el ataque DCSync desde la máquina del atacante, existe otra manera de llevar a cabo este ataque utilizando **mimikatz**. 
 

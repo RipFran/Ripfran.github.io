@@ -2,7 +2,7 @@
 title: Health WriteUp
 date: 2023-01-07 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [gogs,sqli,ssrf,webhook,hashcat,cve-2014-8682]     # TAG names should always be lowercase
+tags: [gogs,sqli,ssrf,webhook,hashcat,cve-2014-8682]     ## TAG names should always be lowercase
 image: htb.jpg
 img_path: /photos/2023-01-07-Health-WriteUp/
 ---
@@ -10,7 +10,7 @@ img_path: /photos/2023-01-07-Health-WriteUp/
 ***Health*** es una máquina *Linux* donde primero explotaremos un ***SSRF*** a través de un ***HTTP redirect*** para conseguir acceder a un servicio web interno de la máquina víctima, ***Gogs***. Posteriormente, conseguiremos explotar un ***SQL Injection*** asociado a este sistema de control de versiones. Para escalar a ***root***, nos aprovecharemos de una **mala implementación** del servicio web, pudiendo así listar la **clave privada SSH** del usuario ***root***.
 
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -24,9 +24,9 @@ img_path: /photos/2023-01-07-Health-WriteUp/
 </table>
 
 
-# Reconocimiento
+## Reconocimiento
 
-## ping
+### ping
 
 En primer lugar enviaremos un _ping_ a la máquina víctima para conocer su sistema operativo y saber si tenemos conexión con ella. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_. Por otra parte, un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -42,7 +42,7 @@ rtt min/avg/max/mdev = 57.624/57.624/57.624/0.000 ms
 
 Nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port discovery
+### Port discovery
 
 A continución procedemos a escanear todo el rango de puertos de la máquina víctima. Lo haremos con la herramienta ***nmap***.
 
@@ -90,9 +90,9 @@ PORT   STATE SERVICE VERSION
 
 El puerto **22** es **SSH** y el puerto **80** **HTTP**. De momento, como no disponemos de credenciales para autenticarnos contra _SSH_, nos centraremos en auditar el puerto 80.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
-### Tecnologías utilizadas
+#### Tecnologías utilizadas
 
 Vamos a utilizar **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -111,7 +111,7 @@ http://10.10.11.176 [200 OK] Apache[2.4.29], Cookies[XSRF-TOKEN,laravel_session]
 
 En este caso, dominio e IP apuntan a la misma página web.
 
-### Inspeccionando la web
+#### Inspeccionando la web
 
 Como se indica en la descripción de la página web, se trata de un portal que permite verificar si un sitio web está disponible o no. De los 4 campos disponibles para rellenar, los dos primeros son los importantes:
 
@@ -195,9 +195,9 @@ La información que se envía por *post* es la siguiente:
 ```
 
 
-# Consiguiendo shell como susanne
+## Consiguiendo shell como susanne
 
-## Ataque Server Side Request Forgery (SSRF)
+### Ataque Server Side Request Forgery (SSRF)
 
 ¿Qué pasaría si pudiésemos monitorizar una URL de la máquina víctima, por ejemplo, http://health.htb? Tendriamos acceso a su código HTML. En este caso, ya lo podemos visualizar sin necesidad de tener que monitorizarla, pero, ¿Y si corre otro servicio web en otro puerto de la máquina víctima en el que no tenemos acceso desde el exterior?
 
@@ -205,7 +205,7 @@ Un ataque ***SSRF (Server-Side Request Forgery)*** es una técnica utilizada por
 
 En este caso, lograremos como atacantes que el servidor web víctima envíe una solicitud a un servicio interno, que normalmente no estaría disponible para acceso externo.
 
-### Preparando el ataque
+#### Preparando el ataque
 
 Parece que la web está debidamente *securizada* para que no podamos apuntar a servicios internos. Después de probar con los siguientes ***monitored url***:
 
@@ -225,7 +225,7 @@ Esta sería la representación de lo que está pasando:
 ![imagen 6](Pasted image 20230103190148.png)
 
 
-### SSRF aprovechándonos de un HTTP redirect
+#### SSRF aprovechándonos de un HTTP redirect
 
 Para intentar **burlar** la protección anterior, podríamos hacer que el servicio web monitorizara una web nuestra y luego redirigir el tráfico con un ***redirect*** a un servicio interno.
 
@@ -283,7 +283,7 @@ Rellenamos el formulario, clicamos en ***Test*** y recibiremos la siguiente info
 
 Es el código fuente http://health.htb. **El SSRF ha funcionado**.
 
-## Auditando Puerto 3000
+### Auditando Puerto 3000
 
 Recordemos, que en el escaneo de puerto descubrimos el **puerto 3000 filtrado**. Esto quería decir que estaba protegido por un cortafuegos y no podíamos acceder al servicio desde el exterior. Pero, ahora, **estamos tramitando solicitudes desde el interior con el *SSRF***, por lo que el cortafuegos no actuará.
 
@@ -385,9 +385,9 @@ Gogs - 'label' SQL Injection
 Gogs - 'users'/'repos' '?q' SQL Injection
 ```
 
-### Gogs SQL Injection (CVE-2014-8682)
+#### Gogs SQL Injection (CVE-2014-8682)
 
-#### Encontrando la vulnerabilidad
+##### Encontrando la vulnerabilidad
 
 [Aquí](https://www.exploit-db.com/exploits/35238) podemos ver el reporte de la vulnerabilidad. La parte de código vulnerable es la siguiente:
 
@@ -420,7 +420,7 @@ http://10.10.11.176/api/v1/users/search?q=TEST
 
 La palabra **TEST** se sustituirá directamente en ***opt.keyword***. Esto lo hace vulnerable a SQLI, ya que por ejemplo el *input* no se está **sanitizando**.
 
-#### Explotando SQLI
+##### Explotando SQLI
 
 Podríamos construir una petición maliciosa de la siguiente manera:
 
@@ -543,7 +543,7 @@ Y aquí el resultado:
 ]
 ```
 
-#### Reconstruyendo el hash
+##### Reconstruyendo el hash
 
 Ahora debemos darle **formato** a la información obtenida para formar un ***hash*** y luego poderlo *crackear* por fuerza bruta con la herramienta *hashcat*.
 
@@ -590,7 +590,7 @@ Lo concatenamos todo y obtenemos:
 sha256:10000:c08zWEliZVcxNA==:ZsB0ZFVFeB8QZPt/0Rd0U9uPDKLOWKnYHAS+Lm07oqDWwDLw/U74P0jXQ0nsGW9O/jc=
 ```
 
-#### Hashcat para romper el hash
+##### Hashcat para romper el hash
 
 Emplearemos ***hashcat*** para *crackear* el hash. ***Hashcat*** es una herramienta de recuperación de contraseñas que emplea diferentes algoritmos de *hashing* (codificación) para tratar de calcular las contraseñas originales a partir de *hashes*.
 
@@ -615,7 +615,7 @@ sha256:10000:c08zWEliZVcxNA==:ZsB0ZFVFeB8QZPt/0Rd0U9uPDKLOWKnYHAS+Lm07oqDWwDLw/U
 
 Seguidamente, podemos intentar conectarnos por *SSH* con las credenciales: ***susanne:february15***
 
-## user.txt
+### user.txt
 
 En el ***homedir*** de *susanne* encontraremos la primera *flag*:
 
@@ -624,9 +624,9 @@ susanne@health:~$ cat user.txt
 f2eda025c84012295e2a11da2a7d1023
 ```
 
-# Consiguiendo shell como root
+## Consiguiendo shell como root
 
-## Reconocimiento del sistema como susanne
+### Reconocimiento del sistema como susanne
 
 Podemos buscar **contraseñas** que se estén almacenando en texto plano en el directorio donde se encuentran todos los archivos de configuración de la web:
 
@@ -653,7 +653,7 @@ susanne@health:/var/www/html$ mysql -u laravel -pMYsql_strongestpass@2014+
 
 Tenemos acceso a una **base de datos** llamada *laravel* que contiene unas cuantas tablas.
 
-### Reconocimiento del sistema con pspy
+#### Reconocimiento del sistema con pspy
 
 **_Pspy_** es una herramienta que nos permite ver qué tareas se están ejecutando a intervalos regulares de tiempo y por qué usuarios. Nos la podemos descargar del siguiente [repositorio](https://github.com/DominicBreuker/pspy).
 
@@ -685,7 +685,7 @@ Efectivamente, ahí se encuentra el contenido de nuestro *webhook*. Pasado un ti
 
 Y el contenido de la tabla se borra.
 
-### Inspeccionando código fuente
+#### Inspeccionando código fuente
 
 El siguiente archivo, encontrado en */var/www/html/app/Http/Controllers/HealthChecker.php*, contiene toda la lógica de la página web:
 
@@ -758,7 +758,7 @@ La función comprueba si puede obtener el contenido de la URL especificada en `$
 
 Existe un **problema de implementación** al leer el *monitoredUrl*. Se supone que ***@file_get_contents*** está leyendo el contenido de una web, pero, ¿y si en vez de una URL, igualamos *monitoredUrl* a un archivo del sistema? La variable *res* se igualará al contenido del archivo y posteriormente este contenido viajará en el *body*. Desde el exterior no podíamos, ya que teníamos que poner una URL que fuera válida. Pero ahora, podemos intentar modificar una fila de la tabla *tasks* para que apunte a un archivo del sistema y que nos lo envíe.
 
-## Explotando webhooks
+### Explotando webhooks
 
 Para podernos convertir en *root*, lo más conveniente, pudiendo listar ficheros del sistema, es obtener la **clave privada SSH** de *root*. Esta se encuentra en la ruta */root/.ssh/id_rsa*. Así, luego nos podremos conectar por SSH.
 
@@ -827,13 +827,13 @@ chmod 600 id_rsa
 ssh root@10.10.11.176 -i id_rsa
 ```
 
-## root.txt
+### root.txt
 
 Encontraremos la segunda *flag* en el *homedir* de *root*:
 
 ```bash
-root@health:~# cd /root/
-root@health:~# cat root.txt
+root@health:~## cd /root/
+root@health:~## cat root.txt
 8a2a95667f1d881497732c87c7264bf3
 ```
 

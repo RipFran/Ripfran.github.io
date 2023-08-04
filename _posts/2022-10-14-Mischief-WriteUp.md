@@ -2,7 +2,7 @@
 title: Mischief WriteUp
 date: 2022-10-14 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [insane,snmp,ipv6,iptables, icmp exfiltration]     # TAG names should always be lowercase
+tags: [insane,snmp,ipv6,iptables, icmp exfiltration]     ## TAG names should always be lowercase
 image: /photos/2022-10-14-Mischief-WriteUp/htb.jpg
 ---
 
@@ -11,7 +11,7 @@ image: /photos/2022-10-14-Mischief-WriteUp/htb.jpg
 En el **anexo** explicaré una forma de poder **visualizar archivos** de la máquina víctima utilizando únicamente ***pings***. También inspeccionaremos las **reglas** configuradas por ***iptables*** y mostraré un **script** para ganar acceso de manera **automática** a la máquina víctima como ***www-data***.
 
 
-#  Información de la máquina 
+##  Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -24,9 +24,9 @@ En el **anexo** explicaré una forma de poder **visualizar archivos** de la máq
     </tr>
 </table>
 
-#  Reconocimiento 
+##  Reconocimiento 
 
-##  ping
+###  ping
 
 
 Primero enviaremos un ***ping*** a la máquina víctima para saber su **sistema operativo** y si tenemos **conexión** con ella. Un ***TTL*** menor o igual a 64 significa que la máquina es *Linux*. Por otra parte, un *TTL* menor o igual a 128 significa que la máquina es *Windows*.
@@ -35,7 +35,7 @@ Primero enviaremos un ***ping*** a la máquina víctima para saber su **sistema 
 
 Vemos que nos enfrentamos a una máquina ***Linux*** ya que su ttl es 63.
  
-##  nmap
+###  nmap
 
 Ahora procedemos a escanear **todo el rango de puertos** de la máquina víctima con la finalidad de encontrar aquellos que estén **abiertos** (*status open*). Lo haremos con la herramienta ```nmap```. 
 
@@ -58,7 +58,7 @@ Ejecutaremos: ```nmap -sCV -p22,80 10.10.11.170 -oN targeted```. Obtendremos el 
 
 El puerto **22** es **SSH** y el puerto **3366** parece que es **HTTP**. De momento, como no disponemos de credenciales para autenticarnos contra *SSH*, nos centraremos en auditar el servicio web que corre en el puerto 3366.
 
-##  Puerto 3366 abierto (HTTP)
+###  Puerto 3366 abierto (HTTP)
 
 Los *scripts* básicos de reconocimiento de *nmap* nos han descubierto que nos estamos enfrentando a un servicio web montado con ***python***, concretamente ***python2.7.15***. Al ser python2, es posible que la web se haya desplegado con la herramienta ***SimpleHTTPServer*** (*python2 -m SimpleHTTPServer 3366*). Además, también parece que se requiere de autenticación para poder acceder al portal web.  
 
@@ -74,7 +74,7 @@ Si accedemos a la web:
 
 Vemos que efectivamente se necesitan credenciales válidas. Podemos probar con credenciales por defecto como *admin/admin*, *guest/guest* o *admin/admin123*, pero no conseguiremos acceder. En este punto, viendo que no podemos ni penetrar el puerto 3366 ni el 22, es una buena opción escanear los **puertos** de la máquina víctima por ***UDP***. 
 
-##  Escaneo de puertos por UDP
+###  Escaneo de puertos por UDP
 
 En el descubrimiento de puertos del principio, estábamos escaneando solo por TCP. Para escanear los puertos por UDP deberemos de utilizar el parámetro ***-sU***. Los escaneos por ***UDP*** suelen ser bastante mas **lentos** que los que van por TCP. Por lo tanto, solo escanearemos los **500 puertos mas comunes** con el parámetro **-top-ports 500**.
 
@@ -82,7 +82,7 @@ En el descubrimiento de puertos del principio, estábamos escaneando solo por TC
 
 *Nmap* nos acaba de descubrir que el puerto ***161/UDP (snmp)*** se encuentra **abierto**. 
 
-##  Puerto 161/UDP abierto (snmp)
+###  Puerto 161/UDP abierto (snmp)
 
 ***SNMP*** (*Simple Network Management Protocol*) es un protocolo utilizado para monitorear diferentes dispositivos en la red (como routers, switches, impresoras, IoT...).
 
@@ -91,7 +91,7 @@ Igual que con los puertos 22 y 3366, podemos lanzar una serie de **scripts bási
 
 ```python
 
-# Nmap 7.92 scan initiated Fri Oct 14 23:46:46 2022 as: nmap -sCVU -p161 -oN targetedUDP 10.10.10.92
+## Nmap 7.92 scan initiated Fri Oct 14 23:46:46 2022 as: nmap -sCVU -p161 -oN targetedUDP 10.10.10.92
 Nmap scan report for 10.10.10.92
 Host is up (0.028s latency).
 
@@ -552,7 +552,7 @@ PORT    STATE SERVICE VERSION
 Service Info: Host: Mischief
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-# Nmap done at Fri Oct 14 23:48:12 2022 -- 1 IP address (1 host up) scanned in 86.03 seconds
+## Nmap done at Fri Oct 14 23:48:12 2022 -- 1 IP address (1 host up) scanned in 86.03 seconds
 ```
 
 Nmap ha lanzado un script llamado **snmp-processes**, que nos lista los **procesos** que están **corriendo** en la máquina. Si se está utilizando SimpleHTTPServer en el puerto 3366 de la máquina víctima y además se requiere autenticación para acceder, es posible que el comando que ha utilizado el usuario para desplegar la web sea del tipo: ```python2 -m SimpleHTTPAuthServer <username>:<password>```. Podemos buscar este proceso en el volcado que nos acaba de reportar *nmap*.  
@@ -576,7 +576,7 @@ De todas las que nos salen, la que utilizaremos será la que empieza por dead:be
 
 En caso de quedarnos bloquados, utilizaremos esta ip para escanear puertos.
 
-## Autenticación en el puerto 3366 (HTTP)
+### Autenticación en el puerto 3366 (HTTP)
 
 Ahora ya podemos acceder a la página web con las **credenciales anteriores**. Una vez dentro, vemos lo siguiente:
 
@@ -584,7 +584,7 @@ Ahora ya podemos acceder a la página web con las **credenciales anteriores**. U
 
 Aparte de las que ya tenemos, vemos otro usurio y contraseña: ```administrator:trickeryanddeceit```. **No hay nada mas interesante**. Podríamos inspeccionar la imagen para ver si se ha guardado información relevante en los bytes menos significativos de la misma o *fuzzear* por directorios que se encuentren en la ruta *http://10.10.10.92:3366/*, pero no encontraremos nada. Recordemos que podemos escanear **puertos** por **ipv6**, ya que disponemos de la ipv6 de la víctima. 
 
-## Escaneo de puertos por ipv6
+### Escaneo de puertos por ipv6
 
 El escaneo de puertos es el mismo que por ipv4 pero deeremos utilizar el parametro ***-6***, que indica que estamos utilizando ***ipv6***. 
 
@@ -592,7 +592,7 @@ El escaneo de puertos es el mismo que por ipv4 pero deeremos utilizar el paramet
 
 Nmap nos decubre que por ipv6 está **abierto** un puerto que por ipv4 no estaba, el ***80 (HTTP)***. Vamos a inspeccionarlo.
 
-## Puerto 80 abierto por ipv6 (HTTP) 
+### Puerto 80 abierto por ipv6 (HTTP) 
 
 La forma para acceder a la web es: ***http://\[dead:beef::250:56ff:feb9:5fe1\]***. Lo primero que vemos al acceder a la web es lo siguiente:
 
@@ -610,8 +610,8 @@ Una vez dentro, tendremos acceso a una especie de consola donde parece que podre
 
 También nos dan una pista diciéndonos que en el ***homedir*** de un usuario, se encuentra un archivo ***credentials*** con la contraseña de este usuario. Es posible que sea ***loki***.
 
-#  Consiguiendo shell como www-data
-## Explotando Command Execution Panel
+##  Consiguiendo shell como www-data
+### Explotando Command Execution Panel
 
 
 Lo primero que voy a hacer es intentar enviarme un **ping**. Si me pongo en escucha de trazas icmp por la interfaz tun0 recibo dos trazas:
@@ -642,7 +642,7 @@ En el primer apartado del ***Anexo*** dejo un *script* en python que te automati
 
 En el **Anexo** explico una forma de poder visualizar el archivo ***credentials*** sin ganar acceso a la máquina, con ***pings***.
 
-#  Consiguiendo shell como loki
+##  Consiguiendo shell como loki
 
 Una vez recibida la shell, deberemos hacerle un **tratamiento** para que nos permita poder hacer *Ctrl+C*, limpiar la terminal, movernos con las flechas... Los  comandos que ingresaremos serán:
 
@@ -657,9 +657,9 @@ export SHELL=bash
 
 También deberemos **adaptar el número de filas y de columnas** de esta *shell*. Con el comando ```stty size``` podemos consultar nuestras filas y columnas y con el comando ```stty rows <rows> cols <cols>``` podemos ajustar estos campos.
 
-##  Reconocimiento del sistema
+###  Reconocimiento del sistema
 
-### Analizando archivos de la web
+#### Analizando archivos de la web
 
 En la ruta */var/www/html* podemos encontrar los archivos que componen la web del puerto 80. Si inspeccionamos el ***index.php*** podemos ver por qué no nos dejaba ejecutar algunos comandos como *ls*, *curl* o *wget*.
 
@@ -784,7 +784,7 @@ Son: ```debian-sys-maint:nE1S9Aw1L0Ky3Y9h```
 
 Podríamos intentar acceder a la base de datos pero lo único que encontraremos será la contraseña del usuario *administrator* hasheada, y ya la sabemos. 
 
-### Analizando archivo credentials
+#### Analizando archivo credentials
 
 Recordemos que nos habían dado una pista de que existía un archivo ***credentials*** en el homedir de un usuario, posiblemente ***loki***.
 
@@ -799,11 +799,11 @@ Encontramos una contraseña: ```lokiisthebestnorsegod```. Ahora podemos intentar
 
 Ahora vamos a analizar el sistema como este usuario para ver si como ***loki*** podemos escalar a ***root***.
 
-#  Consiguiendo shell como root
+##  Consiguiendo shell como root
 
-##  Reconocimiento del sistema 
+###  Reconocimiento del sistema 
 
-### User flag
+#### User flag
 
 Podemos encontrar la primera flag **user.txt** en el *homedir* de *loki*:
 
@@ -812,7 +812,7 @@ loki@Mischief:~$ cat user.txt
 bf58078e7b802c5f32b545eea7c90060
 ```
 
-### Analizando .bash_history del usurio loki
+#### Analizando .bash_history del usurio loki
 
 Si listamos los archivos del ***homedir*** de loki nos encontramos con que podemos **leer** el **historial de bash** de este usuario. Normalmente el ***.bash_history*** apunta al */dev/null* y no se puede visualizar, pero en este caso si que lo podremos hacer:
 
@@ -877,10 +877,10 @@ Vemos que sí que deberíamos de poder ejecutarlo ya que ***otros*** tienen perm
 ```ruby
 loki@Mischief:~$ getfacl /bin/su
 getfacl: Removing leading '/' from absolute path names
-# file: bin/su
-# owner: root
-# group: root
-# flags: s--
+## file: bin/su
+## owner: root
+## group: root
+## flags: s--
 user::rwx
 user:loki:r--
 group::r-x
@@ -895,25 +895,25 @@ Por tanto, si **migramos** otra vez al usuario ***www-data*** (lo podemos hacer 
 ```ruby
 www-data@Mischief:/home/loki$ su root
 Password: 
-root@Mischief:/home/loki# whoami
+root@Mischief:/home/loki## whoami
 root
 ```
 
 Nos convertiremos en ***root*** y ya podremos visualizar la flag ***root.txt*** (esta vez la flag no se encuentra en el *homedir* de *root*, la econtraremos en la ruta */usr/lib/gcc/x86_64-linux-gnu/7/root.txt*):
 
 ```ruby
-root@Mischief:~# cat root.txt 
+root@Mischief:~## cat root.txt 
 The flag is not here, get a shell to find it!
-root@Mischief:~# find / -name root.txt 2>/dev/null
+root@Mischief:~## find / -name root.txt 2>/dev/null
 /usr/lib/gcc/x86_64-linux-gnu/7/root.txt
 /root/root.txt
-root@Mischief:~# cat /usr/lib/gcc/x86_64-linux-gnu/7/root.txt
+root@Mischief:~## cat /usr/lib/gcc/x86_64-linux-gnu/7/root.txt
 ae155fad479c56f912c65d7be4487807
 ```
 
-#  Anexo
+##  Anexo
 
-##  Autopwn www-data
+###  Autopwn www-data
 
 El siguiente ***script*** automatiza la intrusión a la máquina como el usuario ***www-data***. Simplemente se debe **cambiar** la ipv6 dead:beef:2::1000 a la ipv6 de tu interfaz tun0 de *HTB*.
 
@@ -923,7 +923,7 @@ El siguiente ***script*** automatiza la intrusión a la máquina como el usuario
 from pwn import *
 import sys,signal,os,requests
 
-# Ctrl + C
+## Ctrl + C
 def def_handler(sig, frame):
     print("[!] Saliendo...")
     sys.exit(1)
@@ -984,14 +984,14 @@ if __name__ == '__main__':
         shell.interactive()
 ```
 
-##   Analizando las reglas iptables 
+###   Analizando las reglas iptables 
 
 Una vez autenticados como **root**, podemos visualizar las **reglas iptables**.
 
 Podemos ver que efectivamente **hay reglas de firewall configuradas** que no nos permiten establecer ni conexiones *TCP* ni *UDP* por ipv4. Por eso **no nos podíamos enviar** una **reverse shell** con ipv4 por el puerto 443/TCP. Esto también explica por qué **no podíamos ver el puerto 80** por ipv4, ya que esta conexión es rechazada (solo admite conexiones al 22,3366/TCP y 161/UDP).
 
 ```ruby
-root@Mischief:~# iptables -S
+root@Mischief:~## iptables -S
 -P INPUT ACCEPT
 -P FORWARD ACCEPT
 -P OUTPUT ACCEPT
@@ -1012,7 +1012,7 @@ root@Mischief:~# iptables -S
 En cambio, la configuración de reglas por **ipv6** está **vacía**, explicando por qué por ipv6 si que hemos podido descubrir el **puerto 80 abierto** y nos hemos podido enviar una **shell** por tcp al puerto 443.
 
 ```ruby
-root@Mischief:~# ip6tables -L
+root@Mischief:~## ip6tables -L
 Chain INPUT (policy ACCEPT)
 target     prot opt source               destination         
 
@@ -1023,7 +1023,7 @@ Chain OUTPUT (policy ACCEPT)
 target     prot opt source               destination  
 ```
 
-##   Data Exfiltration con ICMP 
+###   Data Exfiltration con ICMP 
 
 En esta sección explico una forma muy interesante de **transferir datos por ICMP**, a través de ***ping***, pudiendo visualizar toda clase de archivos como el ***/etc/passwd*** de la máquina víctima o en este caso el ***/home/loki/credential***, que contiene las credenciales del usuario loki. 
 

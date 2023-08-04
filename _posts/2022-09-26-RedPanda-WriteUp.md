@@ -2,14 +2,14 @@
 title: RedPanda WriteUp
 date: 2022-09-26 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [java ssti,xxe]     # TAG names should always be lowercase
+tags: [java ssti,xxe]     ## TAG names should always be lowercase
 image: /photos/2022-09-26-RedPanda-WriteUp/htb.jpg
 ---
 
 
 **RedPanda** es una máquina ***Linux*** en la que explotaremos un *Server Side Template Injection (**SSTI**)* para conseguir ejecutar comandos como el usuario *woodenk*. Posteriormente, para convertirnos en el usuario *root*, explotaremos un *XML External Entity (**XXE**)* gracias a un programa que está corriendo el mismo usuario *root* a intervalos regulares de tiempo. Conseguiremos su clave privada y nos podremos conectar por ssh. 
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -23,9 +23,9 @@ image: /photos/2022-09-26-RedPanda-WriteUp/htb.jpg
 </table>
 
 
-#  Reconocimiento  
+##  Reconocimiento  
 
-## ping  
+### ping  
 
 Primero enviaremos un *ping* a la máquina victima para saber su sistema operativo y si tenemos conexión con ella. Un *TTL* menor o igual a 64 significa que la máquina es *Linux*. Por otra parte, un *TTL* menor o igual a 128 significa que la máquina es *Windows*.
 
@@ -33,7 +33,7 @@ Primero enviaremos un *ping* a la máquina victima para saber su sistema operati
 
 Vemos que nos enfrentamos a una máquina ***Linux*** ya que su ttl es 63.
  
-## nmap  
+### nmap  
 
 Ahora procedemos a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (*status open*). Lo haremos con la herramienta ```nmap```. 
 
@@ -53,7 +53,7 @@ Una vez descubiertos los **puertos abiertos**, que son el **22 y el 8080**, lanz
 Ejecutaremos: ```nmap -sCV -p22,8080 10.10.11.170 -oN targeted```. Obtendremos el siguiente volcado:
 
 ```ruby 
-# Nmap 7.92 scan initiated Mon Sep 26 13:56:23 2022 as: nmap -sCV -p22,8080 -oN targeted 10.10.11.170
+## Nmap 7.92 scan initiated Mon Sep 26 13:56:23 2022 as: nmap -sCV -p22,8080 -oN targeted 10.10.11.170
 Nmap scan report for 10.10.11.170
 Host is up (0.087s latency).
 
@@ -156,13 +156,13 @@ SF:>");
 Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-# Nmap done at Mon Sep 26 13:56:44 2022 -- 1 IP address (1 host up) scanned in 20.64 seconds
+## Nmap done at Mon Sep 26 13:56:44 2022 -- 1 IP address (1 host up) scanned in 20.64 seconds
 
 ```
 Podemos ver que en el puerto 22 está corriendo el servicio de *SSH* mientras que en el 8080 esta corriendo un servicio *HTTP*. De momento, como no disponemos de credenciales para autenticarnos contra *SSH*, nos centraremos en auditar el puerto 8080.
 
 
-## Puerto 8080 abierto (HTTP)  
+### Puerto 8080 abierto (HTTP)  
 
 Empezaremos el reconocimiento del servidor *HTTP* lanzando la herramienta *whatweb*, que nos servirá para descubrir las tecnologías que corren detrás del servicio web.
 
@@ -183,7 +183,7 @@ En la parte posterior podemos ver una barra de búsqueda. En este punto, podría
 
 Pero antes de probar con cualquier de estos ataques voy a aplicar un poco mas de reconocimiento intentando descubrir directorios que se encuentren bajo el dominio de la máquina víctima.
 
-###  Fuzzing de directorios  
+####  Fuzzing de directorios  
 
 Para el descubrimiento de directorios emplearé la herramienta *wfuzz*. El comando será el siguiente:
 ```wfuzz -c --hc=404 -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -u http://10.10.11.170:8080/FUZZ```
@@ -211,7 +211,7 @@ Lo primero que me doy cuenta al probar diferentes *payloads*, es que hay ciertos
 
 Primero pruebo con las inyecciones *sql* y *nosql* mas simples pero no llego a ningún punto interesante. Simplemente me devuelven el output que yo escribo. Lo interesante ocurre cuando pruebo las inyecciones *SSTI (Server Side Template Injection)*. Como había comentado anteriormente, el hecho de ver en algún sitio de la web tu input te debe de hacer pensar en este tipo de vulnerabilidad.
 
-## SSTI (Server Side Template Injection)  
+### SSTI (Server Side Template Injection)  
 
 En este ataque, un atacante se aprovecha de una platilla para inyectar un *payload* malicioso y poder así ejecutar comandos en el lado del servidor.  
 
@@ -242,7 +242,7 @@ ${T(java.lang.Runtime).getRuntime().exec('cat etc/passwd')}
 ${T(org.apache.commons.io.IOUtils).toString(T(java.lang.Runtime).getRuntime().exec(T(java.lang.Character).toString(99).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(32)).concat(T(java.lang.Character).toString(47)).concat(T(java.lang.Character).toString(101)).concat(T(java.lang.Character).toString(116)).concat(T(java.lang.Character).toString(99)).concat(T(java.lang.Character).toString(47)).concat(T(java.lang.Character).toString(112)).concat(T(java.lang.Character).toString(97)).concat(T(java.lang.Character).toString(115)).concat(T(java.lang.Character).toString(115)).concat(T(java.lang.Character).toString(119)).concat(T(java.lang.Character).toString(100))).getInputStream())}
 ```
 
-Es cierto que estos dos códigos utilizan el carácter *banneado* $ pero hemos visto que tanto con el símbolo * como con el # obteníamos buenos resultados. Por lo tanto, sustituiremos el *$* por el *\**.  
+Es cierto que estos dos códigos utilizan el carácter *banneado* $ pero hemos visto que tanto con el símbolo * como con el ## obteníamos buenos resultados. Por lo tanto, sustituiremos el *$* por el *\**.  
 
 El primer *payload* ejecuta el comando en la máquina víctima pero no muestra el output del mismo, mientras que con el segundo si que se ve.
 
@@ -256,7 +256,7 @@ Si me pongo en escucha con *tcpdump* por la interfaz tun0 para recibir un *ping*
 
 <img src="/photos/2022-09-26-RedPanda-WriteUp/sstipingreceived.png" alt="drawing"  /> 
 
-## Explotando SSTI para conseguir una shell  
+### Explotando SSTI para conseguir una shell  
 
 
 Es hora de enviarnos una *reverse shell*. Lo pasos que seguiré serán:  
@@ -297,15 +297,15 @@ Ahora deberemos escalar privilegios para convertirnos en el usuario ***root***.
 
 ##  Consiguiendo shell como root  
 
-## Reconocimiento del sistema  
+### Reconocimiento del sistema  
 
-###  Grupos de woodenk 
+####  Grupos de woodenk 
 
 Si hacemos un *id* podemos ver que el usuario *woodenk* se encuentra dentro del grupo *logs*. De momento esta información es poco relevante.
 
 <img src="/photos/2022-09-26-RedPanda-WriteUp/logsgroup.png" alt="drawing"  />
 
-###  Reconocimiento del sistema con pspy 
+####  Reconocimiento del sistema con pspy 
 
 *Pspy* es una herramienta que nos permite ver que tareas se están ejecutando a intervalos regulares de tiempo y por qué usuarios. Nos la podemos descargar del siguiente [repositorio](https://github.com/DominicBreuker/pspy).  
 
@@ -323,7 +323,7 @@ De los dos binarios, el que mas me llama la atención es el segundo, ya que se e
 
 Vamos a investigar un poco que el lo que está ejecutando root.
 
-###  Análisis de un jar con la herramienta jd-gui 
+####  Análisis de un jar con la herramienta jd-gui 
 
 Para analizar ejecutables de *java* recomiendo la herramienta *jd-gui*.
 
@@ -445,7 +445,7 @@ Cada búsqueda que hagas en la página web se registra en este archivo (tiene se
 
 En resumen, todo este entramado de funciones se dedica únicamente a contabilizar el número de visitas de las fotos que suben los artistas (wooden y damian) a la página web. Haciendo memoria, había un campo en la web donde podíamos ver este número.
 
-###  Ejemplo  
+####  Ejemplo  
 
 <img src="/photos/2022-09-26-RedPanda-WriteUp/ejemplologs.png" alt="drawing"  />
 
@@ -460,7 +460,7 @@ Esta imagen contendrá en sus metadatos un campo ***Artist*** con el valor *dami
 Una vez identificado su creador el programa se dirige a */credits/damian_creds.xml* e incrementa el número de visitas.
 
 
-## Explotacion del binario: XXE  
+### Explotacion del binario: XXE  
 
 
 La explotación consistira en crear una entrada maliciosa en el archivo *redpanda.log*, que contenga una foto con una campo *Artista* diseñado para que apunte a un archivo nuestro con extensión *_creds.xml*, que contendrá a su vez una entity (XXE) que ejecutara root, y así poder listar su clave ssh privada.
@@ -536,7 +536,7 @@ Una vez root interprete el XML (tardará un rato), podremos visualizar el */etc/
 
 <img src="/photos/2022-09-26-RedPanda-WriteUp/pwned_credsPasswd.png" alt="drawing"  />
 
-## Shell  
+### Shell  
 
 Ahora, para obtener una shell como root, como el puerto 22 está abierto, nos interesa listar su clave privada para posteriormente autenticarnos por *SSH*. Para ello, en vez de *file:///etc/passwd* pondremos *file:///root/.ssh/id_rsa*. Obtendremos la siguiente clave:
 

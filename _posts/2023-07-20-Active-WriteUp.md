@@ -2,7 +2,7 @@
 title: Active WriteUp
 date: 2023-07-20 12:00:00 +/-TTTT
 categories: [HTB, Active Directory]
-tags: [kerberoasting, gpp-password, gpp-decrypt, crackmapexec, smbmap, smbclient, getuserspns.py, john, wmiexec.py]     # TAG names should always be lowercase
+tags: [kerberoasting, gpp-password, gpp-decrypt, crackmapexec, smbmap, smbclient, getuserspns.py, john, wmiexec.py]     ## TAG names should always be lowercase
 image: active.png
 img_path: /photos/2023-07-20-Active-WriteUp/
 ---
@@ -11,11 +11,11 @@ img_path: /photos/2023-07-20-Active-WriteUp/
 
 Adicionalmente, este análisis cuenta con un [Anexo](#anexo-i-comparativa-entre-de-psexecpy-smbexecpy-y-wmiexecpy) donde se **examinan** detalladamente las herramientas de ejecución remota de comandos de Impacket **psexec.py**, **smbexec.py** y **wmiexec.py**. Se exploran las operaciones subyacentes que cada herramienta realiza, las huellas que potencialmente podrían dejar en la máquina objetivo, y se realiza una comparativa entre ellas para determinar sus ventajas y desventajas respectivas en diferentes contextos.
 
-# Reconocimiento
+## Reconocimiento
 
 En esta etapa, nos esforzamos por recopilar la mayor cantidad de información posible sobre nuestro objetivo.
 
-## Identificación del Sistema Operativo con Ping
+### Identificación del Sistema Operativo con Ping
 
 Empezamos por realizar un _**ping**_ a la máquina víctima. La finalidad del _ping_ no es solamente confirmar la conectividad, sino también deducir el sistema operativo que la máquina víctima está utilizando. ¿Cómo lo hace? Por medio del _**Time to Live (TTL)**_.
 
@@ -36,7 +36,7 @@ rtt min/avg/max/mdev = 107.556/107.556/107.556/0.000 ms
 
 Observamos que el _**TTL**_ es 127, lo que sugiere que nos enfrentamos a una máquina **Windows**.
 
-## Descubrimiento de puertos
+### Descubrimiento de puertos
 
 El próximo paso en nuestro proceso de exploración es descubrir los puertos abiertos en la máquina víctima. Para ello, utilizamos la herramienta **nmap**. Nmap nos permite identificar los **puertos abiertos** (status open) en la máquina, que podrían ser potenciales vectores de ataque.
 
@@ -152,7 +152,7 @@ El resultado de este escaneo revela información adicional sobre los servicios e
 | 593                                      | ncacn_http                        | Puntos de extremo de mapeo para RPC sobre HTTP.                                                                                 | Las vulnerabilidades o problemas de configuración pueden permitir la ejecución remota de código.                                               |
 | 9389                                     | .NET Message Framing              | Este puerto se utiliza para la comunicación en el marco de mensajes .NET.                                                       | Las vulnerabilidades pueden permitir ataques de inyección de código o la ejecución remota de código.                                           |
 
-## Puertos 139/445 abiertos (SMB)
+### Puertos 139/445 abiertos (SMB)
 
 **El protocolo SMB (Server Message Block)**, que opera a través de los puertos 139 y 445, se selecciona para un reconocimiento inicial por su relevancia en la configuración de redes Windows y su conocido historial de vulnerabilidades explotables.
 
@@ -193,7 +193,7 @@ Aquí, podemos ver varios recursos compartidos típicos en un entorno de Windows
 
 Además, podemos observar un recurso compartido llamado **"Replication"** que tiene **permisos de lectura**. Este recurso compartido no es un recurso compartido predeterminado y podría **contener información valiosa**.
 
-### Descarga del recurso compartido Replication
+#### Descarga del recurso compartido Replication
 
 Para explorar este recurso compartido "Replication", se utiliza la herramienta `smbmap` con una consulta recursiva:
 
@@ -232,7 +232,7 @@ Resultado de la ejecución:
 
 ![imagen 5](Pasted image 20230718231926.png)
 
-## Análisis de la carpeta active.htb
+### Análisis de la carpeta active.htb
 
 Tras la descarga, se inicia la exploración de la carpeta `active.htb` que estaba contenida en "Replication". Esta carpeta presenta una estructura similar al recurso **SYSVOL** de un controlador de dominio de Windows. En estos recursos, se puede encontrar a veces un **archivo** llamado `groups.xml` que **podría contener credenciales**.
 
@@ -278,7 +278,7 @@ r1pfr4n@parrot> tree
 
 Notablemente, se encuentra un archivo `Groups.xml` bajo el directorio `active.htb/Policies/{31B2F340-016D-11D2-945F-00C04FB984F9}\MACHINE\Preferences\Groups`. Dado que estos archivos pueden contener credenciales, es importante investigarlos con más detalle.
 
-### Descifrando credenciales GPP
+#### Descifrando credenciales GPP
 
 Primero, se analiza el contenido del archivo `Groups.xml` con el siguiente comando:
 
@@ -342,7 +342,7 @@ aes.decrypt
 aes.key = key
 plaintext = aes.update(decoded)
 plaintext << aes.final
-pass = plaintext.unpack('v*').pack('C*') # UNICODE conversion
+pass = plaintext.unpack('v*').pack('C*') ## UNICODE conversion
 
 return pass
 end
@@ -387,11 +387,11 @@ Por otro lado, las credenciales de dominio adquiridas también abren la puerta p
 
 Para aquellos interesados en entender cómo se **enumeraría el servicio RPC** y cómo se llevaría a cabo un **ataque ASREPRoasting** en circunstancias apropiadas, se recomienda visitar el **WriteUp de Forest** en el siguiente enlace: [Forest WriteUp](https://ripfran.github.io/posts/Forest-WriteUp/).
 
-# Obteniendo shell como Administrador del dominio
+## Obteniendo shell como Administrador del dominio
 
 A continuación, en el proceso de resolución de la máquina, el objetivo se centrará en **explotar** una vulnerabilidad conocida como **Kerberoasting**. Al explotar exitosamente este ataque, se obtendrán las **credenciales del Administrador del dominio**, lo que proporcionará un acceso directo y completo a la máquina objetivo.
 
-## Kerberoasting en detalle
+### Kerberoasting en detalle
 
 **Kerberoasting** es una técnica de ataque que aprovecha el protocolo de autenticación Kerberos de Windows para extraer **hashes de contraseñas de cuentas de servicio**. Este ataque se realiza solicitando tickets de servicio (TGS, Ticket-Granting Service) para todas las cuentas de servicio disponibles en el dominio. Posteriormente, estos tickets pueden ser descifrados fuera de línea para obtener los hashes de las contraseñas correspondientes.
 
@@ -412,7 +412,7 @@ Por tanto, Kerberoasting es un **ataque de post-explotación**. Esto significa q
 
 En la próxima sección, se detallará cómo se realizó un ataque de **Kerberoasting en la máquina objetivo**.
 
-## Explotación de Kerberoasting para obtener las credenciales de Administrator
+### Explotación de Kerberoasting para obtener las credenciales de Administrator
 
 El Kerberoasting es una técnica que se puede explotar para obtener contraseñas de cuentas de servicio no convencionales, aquellas que se configuran con la opción `ServicePrincipalName` (SPN). Un SPN es esencialmente un identificador único asignado a un servicio que se ejecuta en un servidor dentro de un dominio de Active Directory. Este identificador permite a los clientes de la red identificar y autenticarse con ese servicio.
 
@@ -476,7 +476,7 @@ Después de ejecutar este comando, se obtendrá una shell como Administrador del
 
 ![imagen 12](Pasted image 20230720124353.png)
 
-## user.txt y root.txt
+### user.txt y root.txt
 
 Con el acceso directo como Administrador del dominio, es posible acceder a las dos flags. La primera, `user.txt`, se ubica en el directorio `Desktop` del usuario `SVC_TGS`:
 
@@ -496,7 +496,7 @@ C:\> type C:\Users\Administrator\Desktop\root.txt
 
 Esta es la flag `root.txt`, que confirma la obtención de acceso con privilegios de Administrador del dominio. Con esto, se concluye con éxito la resolución de la máquina.
 
-# Anexo I: Comparativa entre de psexec.py, smbexec.py y wmiexec.py
+## Anexo I: Comparativa entre de psexec.py, smbexec.py y wmiexec.py
 
 Las herramientas **psexec.py**, **smbexec.py** y **wmiexec.py** son scripts de **Impacket** que permiten la **ejecución de comandos en una máquina remota**. Aunque estas tres tienen el mismo objetivo, cada una de ellas utiliza un método diferente para lograrlo y deja diferentes huellas en el sistema. En este anexo, se exploran en profundidad las **diferencias y similitudes entre estas herramientas**.
 
@@ -520,7 +520,7 @@ A continuación, se presenta una tabla que resume sus diferencias y similitudes:
 
 En los siguientes capítulos de este anexo, se procederá a investigar con más detalle cada una de estas herramientas. Para ello, se establecerá una conexión a través del Protocolo de Escritorio Remoto (RDP, por sus siglas en inglés) con el sistema remoto. Esto permitirá explorar en profundidad las huellas que estas herramientas dejan en el sistema y entender mejor cómo funcionan.
 
-## Habilitando el Acceso Remoto al Escritorio (RDP)
+### Habilitando el Acceso Remoto al Escritorio (RDP)
 
 Antes de profundizar en el análisis de las herramientas **psexec.py**, **smbexec.py** y **wmiexec.py**, es esencial preparar el entorno de prueba. En este caso, se habilitará el *Acceso Remoto al Escritorio* (RDP, por sus siglas en inglés) en la máquina objetivo. Este paso será importante para observar de primera mano los cambios que ocurren en el sistema durante la ejecución de las herramientas y para verificar los eventos generados.
 
@@ -546,7 +546,7 @@ Este comando inicia una **sesión RDP** con la máquina en la dirección IP '10.
 
 Con el acceso RDP habilitado, se puede observar directamente los cambios que ocurren en el sistema durante la ejecución de las herramientas y verificar los eventos generados. Esto será de gran utilidad en el análisis detallado de las herramientas que se realizará a continuación.
 
-## psexec.py
+### psexec.py
 
 **psexec.py** es una herramienta de Impacket que permite la **ejecución de comandos en una máquina remota**. Funciona escribiendo un **binario** con un nombre aleatorio en el **recurso compartido ADMIN$**. Sin embargo, si no se puede escribir en ADMIN$, psexec.py intentará escribir el binario en otros recursos compartidos, incluyendo 'C$', 'NETLOGON' y 'SYSVOL'.
 
@@ -603,7 +603,7 @@ Una característica importante de **PsExec.py** es que **realiza una limpieza de
 
 ![imagen 18](Pasted image 20230720145431.png)
 
-## smbexec.py
+### smbexec.py
 
 **smbexec.py** es una herramienta de Impacket que permite la **ejecución de comandos en una máquina remota**. A diferencia de **psexec.py**, que escribe un binario en el recurso compartido ADMIN$, **smbexec.py** permite la **ejecución de código remoto** a través de una shell semi-interactiva **creando servicios que ejecutan comandos enviados por el atacante**. 
 
@@ -681,7 +681,7 @@ r1pfr4n@parrot> smbexec.py 'Administrator:Ticketmaster1968@10.10.10.100' -debug
 
 Este análisis detallado de **smbexec.py** se ha basado en la información proporcionada en el [artículo](https://u0041.co/blog/post/2) de U0041. 
 
-## wmiexec.py
+### wmiexec.py
 
 **wmiexec.py** es otra herramienta de Impacket que permite la **ejecución de comandos en una máquina remota**. Esta herramienta utiliza la Instrumentación de Administración de Windows (WMI, por sus siglas en inglés) para llevar a cabo su tarea. Para entender cómo funciona, primero debemos entender qué es WMI.
 
@@ -713,7 +713,7 @@ El resultado es:
 
 Este análisis detallado de **wmiexec.py** se ha basado en la información proporcionada en el [artículo](https://medium.com/@allypetitt/windows-remoting-difference-between-psexec-wmiexec-atexec-exec-bf7d1edb5986) de Ally Petitt y en el [artículo](https://vk9-sec.com/impacket-remote-code-execution-rce-on-windows-from-linux/) de VK9 Security. 
 
-## Conclusiones
+### Conclusiones
 
 Las herramientas **psexec.py**, **smbexec.py** y **wmiexec.py** de Impacket ofrecen diferentes métodos para la ejecución de comandos en una máquina remota. Cada una de estas herramientas tiene sus propias ventajas y desventajas, y la elección de la herramienta a utilizar dependerá de las circunstancias específicas y los requisitos del usuario.
 
@@ -725,7 +725,7 @@ Las herramientas **psexec.py**, **smbexec.py** y **wmiexec.py** de Impacket ofre
 
 Es importante tener en cuenta que estas no son las únicas herramientas de Impacket para la ejecución remota de comandos. Impacket también ofrece **atexec.py** y **dcomexec.py**, que proporcionan métodos adicionales para la ejecución remota de comandos. Estas herramientas serán explicadas en próximos artículos.
 
-## Bibliografía
+### Bibliografía
 
 Este análisis comparativo de **psexec.py**, **smbexec.py** y **wmiexec.py** se ha basado en la información proporcionada en los siguientes artículos:
 

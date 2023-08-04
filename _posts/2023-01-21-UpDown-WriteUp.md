@@ -2,14 +2,14 @@
 title: UpDown WriteUp
 date: 2023-01-21 06:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [git logs, php, disable_funcions bypass,suid,sudoers]     # TAG names should always be lowercase
+tags: [git logs, php, disable_funcions bypass,suid,sudoers]     ## TAG names should always be lowercase
 image: updown.jpg
 img_path: /photos/2023-01-21-UpDown-WriteUp/
 ---
 
 ***UpDown*** es una máquina ***Linux*** con dos servicios expuestos, *HTTP* y *SSH*. En primer lugar, conseguiremos obtener acceso a un **subdominio** gracias a la información que encontraremos en un ***.git*** expuesto en la página web. Para obtener una *shell* como *www-data*, podremos subir un archivo *PHP* con extensión *.phar* y utilizaremos la función *proc_open()* para burlar las *disable_functions*. Para escalar a *root*, primero **pivotaremos** al usuario *developer* aprovechándonos de un **binario SUID** y explotando la función *input()* de **Python 2**. Finalmente, conseguiremos **máximos permisos** a través de un privilegio que tenemos asignado a nivel de ***sudoers***.
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -23,9 +23,9 @@ img_path: /photos/2023-01-21-UpDown-WriteUp/
 </table>
 
 
-# Reconocimiento
+## Reconocimiento
 
-## ping 
+### ping 
 
 Vamos a enviar un _ping_ a la máquina víctima con la finalidad de conocer su sistema operativo y saber si tenemos conexión con la misma. Un _TTL_ menor o igual a 64 significa que la máquina es _Linux_ y un _TTL_ menor o igual a 128 significa que la máquina es _Windows_.
 
@@ -41,7 +41,7 @@ rtt min/avg/max/mdev = 105.280/105.280/105.280/0.000 ms
 
 Vemos que nos enfrentamos a una máquina **_Linux_**, ya que su *TTL* es 63.
 
-## Port discovery
+### Port discovery
 
 Procedemos ahora a escanear todo el rango de puertos de la máquina víctima, con la finalidad de encontrar aquellos que estén abiertos (_status open_). Lo haremos con la herramienta ***nmap***.
 
@@ -88,9 +88,9 @@ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
 
 El puerto **22** es **SSH** y el puerto **80** **HTTP**. De momento, al no disponer de credenciales para autenticarnos port _SSH_, nos centraremos en auditar el puerto **80**.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
-### Tecnologías utilizadas 
+#### Tecnologías utilizadas 
 
 Utilizaremos **_whatweb_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -101,7 +101,7 @@ http://10.10.11.177 [200 OK] Apache[2.4.41], Country[RESERVED][ZZ], HTML5, HTTPS
 
 La web está empleando como servidor _Apache 2.4.41_. El título de la página web es *Is my Website up ?*.
 
-### Análisis de la web
+#### Análisis de la web
 
 Cuando accedemos a **http://10.10.11.177** vemos lo siguiente:
 
@@ -113,7 +113,7 @@ Para entender el funcionamiento de la web, podemos desplegar un servidor en *pyt
 
 ![imagen 2](Pasted image 20230116232029.png)
 
-### Intento de SSRF
+#### Intento de SSRF
 
 ¿Que pasaría si pudiésemos introducir una URL que apunte a la máquina víctima, por ejemplo http://siteisup.htb, con el *debug mode* activado? Podríamos visualizar el código HTML. En este caso, ya tenemos acceso al código fuente desde el navegador, pero, ¿Y si corre otro servicio web en otro puerto de la máquina víctima en el que no tenemos acceso desde el exterior? Esto se conoce como un ataque **SSRF**. 
 
@@ -155,7 +155,7 @@ ID           Response   Lines    Word       Chars       Payload
 
 Aunque la web es vulnerable a *SSRF*, **no descubriremos ningún servicio interno** aparte de `http://localhost:80` que es `http://siteisup.htb`. En este punto, vamos a aplicar más reconocimiento. 
 
-### Fuzzing de directorios 
+#### Fuzzing de directorios 
 
 Vamos a **buscar directorios** que se encuentren bajo el dominio `htpp://siteisup.htb`. Lo haremos con la herramienta *gobuster* (es equivalente a *wfuzz*, pero suele ser más rápida en ocasiones):
 
@@ -189,7 +189,7 @@ Nos encuentra un directorio */dev*. En esta clase de **directorios de desarrollo
 
 Exponer este directorio puede ser muy peligroso, ya que el atacante podría tener acceso al **contenido** de los **cambios** que se han realizado **en un proyecto**.
 
-### Inspeccionando git logs
+#### Inspeccionando git logs
 
 Con el comando`wget -r http://siteisup.htb/dev/.git/` podremos descargar el **.git**. Para listar los logs, nos tenemos que situar en la carpeta *.git* y utilizar el comando `git log`:
 
@@ -298,29 +298,29 @@ function isitup($url){
 
 if($_POST['check']){
   
-       # File size must be less than 10kb.
+       ## File size must be less than 10kb.
        if ($_FILES['file']['size'] > 10000) {
         die("File too large!");
   }
        $file = $_FILES['file']['name'];
        
-       # Check if extension is allowed.
+       ## Check if extension is allowed.
        $ext = getExtension($file);
        if(preg_match("/php|php[0-9]|html|py|pl|phtml|zip|rar|gz|gzip|tar/i",$ext)){
                die("Extension not allowed!");
        }
   
-       # Create directory to upload our file.
+       ## Create directory to upload our file.
        $dir = "uploads/".md5(time())."/";
        if(!is_dir($dir)){
         mkdir($dir, 0770, true);
   }
   
-  # Upload the file.
+  ## Upload the file.
        $final_path = $dir.$file;
        move_uploaded_file($_FILES['file']['tmp_name'], "{$final_path}");
        
-  # Read the uploaded file.
+  ## Read the uploaded file.
        $websites = explode("\n",file_get_contents($final_path));
        
        foreach($websites as $site){
@@ -337,7 +337,7 @@ if($_POST['check']){
                }
        }
        
-  # Delete the uploaded file.
+  ## Delete the uploaded file.
        @unlink($final_path);
 }
 
@@ -364,7 +364,7 @@ A grandes rasgos, parece leer un fichero que contiene sitios web, indicando si e
 
 Como en el anterior *log* nos hablaban de *vhosts*, vamos a buscar subdominios que se encuentren bajo *siteisup.htb*.
 
-### Fuzzing de subdominios
+#### Fuzzing de subdominios
 
 Los *logs* anteriores ya nos hablaban de un subdominio *dev*. Aun así, lanzaremos la herramienta ***gobuster***:
 
@@ -410,9 +410,9 @@ Deberemos ir a la configuración del *proxy* y en *Match and Replace* añadiremo
 
 ![imagen 7](Pasted image 20230116235329.png)
 
-### Subdominio dev.siteisup.htb
+#### Subdominio dev.siteisup.htb
 
-#### Tecnologías utilizadas 
+##### Tecnologías utilizadas 
 
 Utilizaremos la extensión de navegador **_wappalyzer_** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -420,7 +420,7 @@ Utilizaremos la extensión de navegador **_wappalyzer_** para enumerar las tec
 
 Como servidor está empleando *nginx 2.4.41* y como lenguaje de programación *PHP*.
 
-#### Inspección de la web
+##### Inspección de la web
 
 Si accedemos a http://dev.siteisup.htb nos encontramos con lo siguiente:
 
@@ -428,12 +428,12 @@ Si accedemos a http://dev.siteisup.htb nos encontramos con lo siguiente:
 
 Nos pide una **lista de sitios web para analizar**. Justo la funcionalidad del *script php* que encontramos anteriormente en los *git logs*, *checker.php*.
 
-#### Analizando checker.php
+##### Analizando checker.php
 
 Vamos a desglosar el funcionamiento de *checker.php*:
 
 ```php
-# File size must be less than 10kb.
+## File size must be less than 10kb.
 if ($_FILES['file']['size'] > 10000) {
 	die("File too large!");
 }
@@ -443,7 +443,7 @@ if ($_FILES['file']['size'] > 10000) {
 El fichero subido tiene que pesar **menos de 10kb**.
 
 ```php
-# Check if extension is allowed.
+## Check if extension is allowed.
 $ext = getExtension($file);
 if(preg_match("/php|php[0-9]|html|py|pl|phtml|zip|rar|gz|gzip|tar/i",$ext)){
 	   die("Extension not allowed!");
@@ -453,7 +453,7 @@ if(preg_match("/php|php[0-9]|html|py|pl|phtml|zip|rar|gz|gzip|tar/i",$ext)){
 Si la extensión coincide con una de las especificadas en el patrón de la expresión regular (*php, php seguido de un número, html, py, pl, phtml, zip, rar, gz, gzip o tar*), el programa termina con un mensaje *"Extension not allowed!".*
 
 ```php
-# Create directory to upload our file.
+## Create directory to upload our file.
 $dir = "uploads/".md5(time())."/";
 if(!is_dir($dir)){
 mkdir($dir, 0770, true);
@@ -462,7 +462,7 @@ mkdir($dir, 0770, true);
 Crea un directorio en ***/uploads/\<dir\>***.
 
 ```php
-# Upload the file.
+## Upload the file.
 $final_path = $dir.$file;
 move_uploaded_file($_FILES['file']['tmp_name'], "{$final_path}");
 ```
@@ -470,7 +470,7 @@ move_uploaded_file($_FILES['file']['tmp_name'], "{$final_path}");
 Mueve el fichero subido al directorio anteriormente generado.
 
 ```php
-# Read the uploaded file.
+## Read the uploaded file.
 $websites = explode("\n",file_get_contents($final_path));
        
 foreach($websites as $site){
@@ -491,7 +491,7 @@ foreach($websites as $site){
 Lee el contenido del fichero y por cada URL nos dice si está activa o no.
 
 ```php
-# Delete the uploaded file.
+## Delete the uploaded file.
 @unlink($final_path);
 ```
 
@@ -505,9 +505,9 @@ Si el **archivo** es suficientemente **largo**, nos dará tiempo a **visualizarl
 
 ![imagen 11](Pasted image 20230117000544.png)
 
-# Consiguiendo shell como www-data
+## Consiguiendo shell como www-data
 
-## Subida de un archivo .phar
+### Subida de un archivo .phar
 
 Una extensión que no se contempla en el listado de extensiones maliciosas es la extensión *.phar*. *.phar* es una extensión de archivo que representa un archivo de paquete PHP. Estos archivos se pueden distribuir y **ejecutar de manera similar a cualquier otro script PHP**. 
 
@@ -527,7 +527,7 @@ Recordemos que, para que nos dé tiempo a visualizar el contenido del fichero an
 
 ![imagen 13](Pasted image 20230117000931.png)
 
-## disable_functions bypass
+### disable_functions bypass
 
 Las típicas funciones de ejecución de comandos como *system, exec, shell_exec, popen, passthru…* están deshabilitadas. Sin embargo, existe una llamada *proc_open*, que no lo está ([Hacktricks disable_functions bypass](https://book.hacktricks.xyz/network-services-pentesting/pentesting-web/php-tricks-esp/php-useful-functions-disable_functions-open_basedir-bypass)).  En este [link](https://tecfa.unige.ch/guides/php/php5/function.proc-open.html), podemos encontrar un ejemplo de utilización de esta función. En nuestro caso, queremos abrir un *bash* y ejecutar como prueba un `ping -c 1 <ip_tun0>` :
 
@@ -635,11 +635,11 @@ También deberemos ajustar el número de filas y de columnas de esta _shell_. C
 
 Ahora deberemos escalar privilegios para convertirnos en el usuario ***developer***.
 
-# Consiguiendo shell como developer
+## Consiguiendo shell como developer
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### Binarios SUID
+#### Binarios SUID
 
 Cuando se ejecuta un binario *SUID*, el sistema operativo asigna los permisos del propietario del archivo al usuario que lo ejecuta, en lugar de los permisos del usuario que lo ejecuta.  Esto puede representar un riesgo de seguridad, ya que un atacante malicioso podría aprovecharse de un archivo *SUID* para obtener privilegios elevados en el sistema. 
 
@@ -721,9 +721,9 @@ lrwxrwxrwx 1 root root 7 Apr 15  2020 /usr/bin/python -> python2
 
 Se está utilizando *Python 2*. La función *input()* de *Python 2*, presenta una vulnerabilidad muy grave.
 
-## Explotando función input() de Python 2
+### Explotando función input() de Python 2
 
-### Contexto
+#### Contexto
 
 Hay **dos métodos comunes** para recibir **entradas** en Python 2.x:
 
@@ -734,7 +734,7 @@ En nuestro caso, como en el script anterior se está empleando *input()*, la vul
 
 En *Python 3*, la función *raw_input()* se borró y su funcionalidad se transfirió a una nueva función integrada conocida como *input()*. Todo esto está explicado con más detenimiento en este [enlace](https://www.geeksforgeeks.org/vulnerability-input-function-python-2-x/).
 
-### Explotación
+#### Explotación
 
 La **función** que introduciremos como entrada será la siguiente:
 
@@ -802,7 +802,7 @@ Last login: Tue Jan 17 13:05:32 2023 from 10.10.14.127
 developer@updown:~$ 
 ```
 
-## user.txt
+### user.txt
 
 Podemos encontrar la primera *flag* en el *homedir* de *developer*:
 
@@ -811,11 +811,11 @@ developer@updown:~$ cat user.txt
 1eefaf3e3a6a648a24ca30cabe550728
 ```
 
-# Consiguiendo shell como root
+## Consiguiendo shell como root
 
-## Reconocimiento del sistema
+### Reconocimiento del sistema
 
-### sudoers
+#### sudoers
 
 Para listar los privilegios de **_sudo_** asignados al usuario *developer* utilizaremos el comando `sudo -l`:
 
@@ -832,7 +832,7 @@ Podemos ejecutar como ***root*** el binario */usr/local/bin/easy_install*.
 
 *easy_install* es una herramienta para instalar paquetes de *Python* en sistemas *Linux*.
 
-### Explotación del binario easy_install
+#### Explotación del binario easy_install
 
 Al tratarse de un binario conocido, podemos buscar en [GTFObins](https://gtfobins.github.io/gtfobins/easy_install/) si presenta alguna vulnerabilidad que nos permita escalar privilegios. Teniendo permisos de *sudo*, los pasos a seguir son los siguientes:
 
@@ -850,16 +850,16 @@ WARNING: The easy_install command is deprecated and will be removed in a future 
 Processing tmp.MsysFeFmHD
 Writing /tmp/tmp.MsysFeFmHD/setup.cfg
 Running setup.py -q bdist_egg --dist-dir /tmp/tmp.MsysFeFmHD/egg-dist-tmp-5Im0md
-# whoami
+## whoami
 root
 ```
 
-## root.txt
+### root.txt
 
 Encontraremos la segunda *flag* en el *homedir* de *root*:
 
 ```bash
-# cat root.txt
+## cat root.txt
 4d58348454902d55b092802f34d2fd15
 ```
 

@@ -2,14 +2,14 @@
 title: Soccer WriteUp
 date: 2023-01-02 19:00:00 +/-TTTT
 categories: [HTB, Linux]
-tags: [webshell,php,websockets,sqli blind, htb]     # TAG names should always be lowercase
+tags: [webshell,php,websockets,sqli blind, htb]     ## TAG names should always be lowercase
 image: /htb.jpg
 img_path: /photos/2023-01-02-Soccer-WriteUp/
 ---
 
 ***Soccer*** es una máquina *Linux* donde primeramente conseguiremos explotar el servicio *Tiny File Manager* subiendo una ***webshell*** en *PHP*. Siendo ***www-data*** descubriremos un **subdominio** que utiliza ***websockets***. Explotaremos un ***SQLI Blind Time Based*** para convertirnos en el usuario ***player***. Finalmente, nos ayudaremos de las herramientas ***dstat*** y ***doas*** para escalar privilegios y convertirnos en ***root***.
 
-# Información de la máquina 
+## Información de la máquina 
 
 <table width="100%" cellpadding="2">
     <tr>
@@ -22,9 +22,9 @@ img_path: /photos/2023-01-02-Soccer-WriteUp/
     </tr>
 </table>
 
-# Reconocimiento 
+## Reconocimiento 
 
-## ping
+### ping
 
 Primero enviaremos un **ping** a la máquina víctima para saber su sistema operativo y si tenemos conexión con ella. Un *TTL* menor o igual a **64** significa que la máquina es ***Linux***. Por otra parte, un *TTL* menor o igual a **128** significa que la máquina es ***Windows***.
 
@@ -40,7 +40,7 @@ rtt min/avg/max/mdev = 61.826/61.826/61.826/0.000 ms
 
 Vemos que nos enfrentamos a una máquina ***Linux***, ya que su ***TTL*** es **63**.
 
-## Port discovery
+### Port discovery
 
 Ahora procedemos a escanear todo el rango de puertos de la máquina víctima con la finalidad de encontrar aquellos que estén abiertos (*status open*). Lo haremos con la herramienta ***nmap***.
 
@@ -121,7 +121,7 @@ PORT     STATE SERVICE         VERSION
 
 El puerto **22** es **SSH**, el puerto **80** **HTTP** y el **9091** puede que sea ***xmltec-xmlmail*** (no es seguro, *nmap* pone un interrogante). De momento, como no disponemos de credenciales para autenticarnos contra *SSH*, nos centraremos en auditar los puertos 80.
 
-## Puerto 80 abierto (HTTP)
+### Puerto 80 abierto (HTTP)
 
 Gracias a los ***scripts*** de reconocimiento que lanza ***nmap***, podemos ver que el servicio web que corre en el puerto 80 nos redirige al dominio **soccer.htb**. Para que nuestra máquina pueda resolver a este dominio deberemos añadirlo al final de nuestro ***/etc/hosts***, de la forma:  
 
@@ -129,7 +129,7 @@ Gracias a los ***scripts*** de reconocimiento que lanza ***nmap***, podemos v
 10.10.11.194 soccer.htb
 ```
 
-### Tecnologías utilizadas
+#### Tecnologías utilizadas
 
 Primero utilizaremos ***whatweb*** para enumerar las tecnologías que corren detrás del servicio web. Nos encontramos con lo siguiente:
 
@@ -141,7 +141,7 @@ http://soccer.htb/ [200 OK] Bootstrap[4.1.1], Country[RESERVED][ZZ], HTML5, HTTP
 
 Nos hace el redireccionamiento que ya sabíamos a ***soccer.htb***. La web está usando *nginx 1.18.0* y versión de *jquery 3.2.1,3.6.0*.
 
-### Fuzzing de directorios
+#### Fuzzing de directorios
 
 Como en ***http://soccer.htb/*** no encontramos nada interesante, vamos a buscar directorios que se encuentren bajo el dominio de la máquina víctima.
 
@@ -172,7 +172,7 @@ ID           Response   Lines    Word       Chars       Payload
 
 El único directorio interesante que encontramos es el directorio **tiny** que nos devuelve un 301. 
 
-### Tiny File Manager
+#### Tiny File Manager
 
 Del anterior volcado de *wfuzz*, encontramos el directorio ***tiny***: 
 
@@ -186,11 +186,11 @@ Al ingresar a la web lo único que vemos es un panel de *login*. Como no dispone
 
 Como este aplicativo nos permite subir archivos y la web trabaja con *PHP*, podríamos intentar subir una ***webshell*** en *PHP* y que a través de un parámetro nos ejecute comandos. 
 
-#  Consiguiendo shell como www-data 
+##  Consiguiendo shell como www-data 
 
 En el archivo ***tinyfilemanager.php*** del directorio *tiny* podemos ver la configuración del servicio. Podemos encontrar las credenciales ***admin:admin@123*** y ***user:12345***.
 
-## PHP file upload
+### PHP file upload
 
 En el directorio principal no tenemos permisos para subir archivos, pero en el directorio *tiny/uploads* sí que podremos. La ***webshell*** será:
 
@@ -298,11 +298,11 @@ También deberemos ajustar el número de filas y de columnas de esta _shell_. C
 
 Ahora deberemos escalar privilegios para convertirnos en el usuario ***player***.
 
-#  Consiguiendo shell el usuario player 
+##  Consiguiendo shell el usuario player 
 
-## Reconocimiento como www-data 
+### Reconocimiento como www-data 
 
-### Descubrimiento del subdominio soc-player.soccer.htb
+#### Descubrimiento del subdominio soc-player.soccer.htb
 
 Como sabemos que se estaba utilizando *nginx* para correr el sitio web, una ruta interesante para ver la configuración de los dominios es ***/etc/nginx/sites-avaliable***. Cada archivo de configuración en este directorio representa un sitio web configurado en el servidor Nginx. Dentro de este directorio encontramos un archivo llamado *soc_player.htb*:
 
@@ -340,7 +340,7 @@ Encontramos el subdominio ***soc-player*** del dominio *soccer.htb*. Podemos añ
 10.10.11.194 soccer.htb soc-player.soccer.htb
 ```
 
-### Analizando http://soc-player.soccer.htb
+#### Analizando http://soc-player.soccer.htb
 
 La página web que vemos es bastante parecida a ***http://soccer.htb*** pero ahora con unos cuantos botones más. Podemos hacernos una cuenta e iniciar sesión.
 
@@ -357,7 +357,7 @@ Podemos enviar la petición al *Repeater* y ***fuzzear*** el input en busca de c
 
 Después de probar con multitud de *payloads*, vemos que el campo de input es **vulnerable a SQLI Blind**.
 
-## SQLI blind time based
+### SQLI blind time based
 
 ***SQL Injection Blind (SQLI Blind)*** es un tipo de ataque de inyección de SQL que se utiliza para explotar vulnerabilidades en una aplicación web. Se llama *blind* (ciego) porque el atacante no recibe una respuesta directa del servidor como resultado de su ataque.
 
@@ -375,7 +375,7 @@ La imagen de abajo es una foto del *Repeater* con el *payload* malicioso en la i
 
 En este punto que ya sabemos que es vulnerable a este tipo de ataque, podemos aprovecharnos del tiempo para **volcar toda la información de la base de datos**. Usaremos *python3* para desarrollar los *scripts*.
 
-### Base de datos en uso
+#### Base de datos en uso
 
 Como se está utilizando ***web sockets***, la forma de operar será diferente en cuanto a desarrollo de *scripts* se refiere. En este caso, deberemos definir una función asíncrona que se encargara de enviar el *input* a *ws://soc-player.soccer.htb:9091/*. 
 
@@ -459,7 +459,7 @@ python3 prueba.py
 
 La base de datos en uso es ***soccer_db***.
 
-### Bases de datos existentes
+#### Bases de datos existentes
 
 Para volcar todas las **bases de datos** la *query* será la siguiente:
 
@@ -542,7 +542,7 @@ python3 tables.py
 
 Las 4 primeras suelen ser bases de datos por defecto de MySQL, por lo que no son relevantes. Por lo tanto, nos centraremos en ***soccer_db***.
 
-### Tablas de la base de datos *soccer_db*
+#### Tablas de la base de datos *soccer_db*
 
 Para listar las **tablas** de *soccer_db*, utilizaremos el siguiente payload:
 
@@ -618,7 +618,7 @@ Al cabo de un rato descubriremos:
 
 En la base de datos soccer_db solo existe la tabla ***accounts***.
 
-### Columnas de la tabla *accounts*
+#### Columnas de la tabla *accounts*
 
 Ahora listaremos todas las **columnas** de la tabla accounts. Deberíamos de encontrar dos columnas que hicieran alusión al nombre de **usuario** y **contraseña**.
 
@@ -709,7 +709,7 @@ Las columnas encontradas son:
 
 Ya para finalizar, podemos intentar volcar la información contenida en las columnas ***username*** y ***password***.
 
-### Usuarios y contraseñas
+#### Usuarios y contraseñas
 
 
 Por último, ***dumpearemos*** la información de las columnas *username* y *password*:
@@ -787,7 +787,7 @@ python3 tables.py
 
 Y encontraremos las credenciales ***player:PlayerOftheMatch2022***
 
-### user.txt
+#### user.txt
 
 Nos podemos conectar a través de ***SSH***, o bien a través de la consola ganada anteriormente como *www-data*. En el ***homedir*** de *player* encontraremos la primera *flag*:
 
@@ -795,9 +795,9 @@ Nos podemos conectar a través de ***SSH***, o bien a través de la consola gana
 player@soccer:~$ cat user.txt 
 acf4b8ef3efeabcc450fa51ae116bdcf
 ```
-#  Consiguiendo shell como root
+##  Consiguiendo shell como root
 
-## Reconocimiento del sistema como player
+### Reconocimiento del sistema como player
 
 Empezaremos enumerando todos aquellos archivos que tengan permiso ***suid***:
 
@@ -826,7 +826,7 @@ player@soccer:/tmp$ find / -group player 2>/dev/null -ls | grep -vE "home|proc|r
 Encontramos que tenemos todos los permisos (rwx) en el directorio ***/usr/local/share/dstat***. 
 *grep -vE* es para quitar ruido de rutas poco interesantes.
 
-### Reconocimiento con LinPEAS
+#### Reconocimiento con LinPEAS
 
 
 ***LinPEAS*** es un script de *bash* que se utiliza para recopilar información sobre la configuración y la seguridad de un sistema operativo. Se puede utilizar para hacer un análisis de seguridad de un sistema y para identificar posibles vulnerabilidades. Lo podemos descargar de [aquí](https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS) y luego transportarlo a la máquina víctima compartiéndonos el binario con un servidor de python (***python3 -m http.server 80***) y descargándolo con ***wget***.
@@ -840,7 +840,7 @@ permit nopass player as root cmd /usr/bin/dstat
 
 El archivo */usr/local/doas/doas.conf* se ha configurado para que podemos ejecutar como el usuario ***root*** el comando */usr/bin/**dstat***. 
 
-### dstat 
+#### dstat 
 
 ***dstat*** es una herramienta de monitoreo de rendimiento para sistemas operativos basados en Unix. Permite a los usuarios ver información en tiempo real sobre el rendimiento del sistema, incluyendo el uso de la CPU, la memoria, el disco y la red.
 
@@ -881,7 +881,7 @@ player@soccer:/tmp$ cat /usr/share/dstat/
 dstat_fan.py                  dstat_mongodb_opcount.py      dstat_nfsd4_ops.py            dstat_snooze.py               dstat_top_oom.py
 dstat.py                      dstat_freespace.py
 ```
-## Explotación de doas y dstat
+### Explotación de doas y dstat
 
 En este punto, vamos a construirnos un *script* en *python* ***dstat_pwned.py*** que al ser ejecutado por *root* dé permisos *suid* a la *bash*:
 
@@ -901,15 +901,15 @@ y ya podremos *spawnearnos* una ***shell*** como el usuario ***root***:
 
 ```bash
 player@soccer:/tmp$ bash -p 
-bash-5.0# whoami
+bash-5.0## whoami
 root
 ```
-## root.txt
+### root.txt
 
 En el ***homedir*** de *root* encontraremos la segunda ***flag***:
 
 ```bash
-bash-5.0# cat /root/root.txt 
+bash-5.0## cat /root/root.txt 
 0bbe8baea96c4f28867887bfdda9b16b
 ```
 
