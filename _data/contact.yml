@@ -10,9 +10,16 @@
   icon: "fas fa-envelope"
   noblank: true # open link in current tab
 
-- type: rss
-  icon: "fas fa-rss"
-  noblank: true
+-
+  type: linkedin
+  icon: 'fab fa-linkedin'   # icons powered by <https://fontawesome.com/>
+  url:  'https://www.linkedin.com/in/francisco-carot-ripolles-67b63a260/'      
+  
+-
+  type: buymeacoffee
+  icon: 'fa-solid fa-mug-saucer' 
+  url:  'https://www.buymeacoffee.com/ripfran' 
+  
 # Uncomment and complete the url below to enable more contact options
 #
 # - type: mastodon
