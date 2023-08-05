@@ -3,6 +3,7 @@
 icon: fa-solid fa-ranking-star
 order: 5
 description: "¡Únete al Desafío de Active Directory en 15 días! Pon a prueba tus habilidades y conocimientos en Active Directory con preguntas diarias. ¡Sigue el juego en Twitter y conviértete en el campeón de la comunidad!"
+image: /photos/ad.png
 ---
 
 ## Introducción y Explicación del Juego 🎮
