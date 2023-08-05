@@ -1,5 +1,5 @@
 ---
-title: Shared WriteUp
+title: "HTB: Resolución de la máquina Shared"
 date: 2022-09-30 19:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [sqli,cve-2022-21699,cve-2022-0543]     ## TAG names should always be lowercase

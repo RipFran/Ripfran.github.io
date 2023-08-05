@@ -1,5 +1,5 @@
 ---
-title: Awkward WriteUp
+title: "HTB: Resolución de la máquina Awkward"
 date: 2023-02-25 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [ssrf, lfi, command injection]     ## TAG names should always be lowercase

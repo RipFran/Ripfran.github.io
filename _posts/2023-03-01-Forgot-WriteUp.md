@@ -1,5 +1,5 @@
 ---
-title: Forgot WriteUp
+title: "HTB: Resolución de la máquina Forgot"
 date: 2023-03-04 16:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [cache poisoning, password reset poisoning, python code injection]     ## TAG names should always be lowercase

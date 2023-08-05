@@ -1,5 +1,5 @@
 ---
-title: Shoppy WriteUp
+title: "HTB: Resolución de la máquina Shoppy"
 date: 2023-01-14 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [nosqli,docker,sudoers]     ## TAG names should always be lowercase

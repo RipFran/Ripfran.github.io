@@ -1,5 +1,5 @@
 ---
-title: RainyDay WriteUp
+title: "HTB: Resolución de la máquina RainyDay"
 date: 2023-02-18 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [docker,cookies,sudoers, port forwarding, bcrypt,python]     ## TAG names should always be lowercase

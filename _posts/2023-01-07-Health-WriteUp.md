@@ -1,5 +1,5 @@
 ---
-title: Health WriteUp
+title: "HTB: Resolución de la máquina Health"
 date: 2023-01-07 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [gogs,sqli,ssrf,webhook,hashcat,cve-2014-8682]     ## TAG names should always be lowercase

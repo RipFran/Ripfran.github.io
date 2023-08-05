@@ -1,5 +1,5 @@
 ---
-title: Sauna WriteUp
+title: "HTB: Resolución de la máquina Sauna"
 date: 2023-07-18 12:00:00 +/-TTTT
 categories: [HTB, Active Directory]
 tags: [asreproasting, kerberoasting, bloodhound, dcsync, pass the hash, mimikatz.exe, crackmapexec, rpcclient, smbmap, smbclient, getnpusers.py, kerbrute, john, evil-winrm, sharphound.exe, winpeas.exe, credenciales autologon, secretsdump.py, getuserspns.py, ntpdate, adsearch.exe, rubeus.exe, hashcat]     # TAG names should always be lowercase

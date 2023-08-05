@@ -1,5 +1,5 @@
 ---
-title: Mischief WriteUp
+title: "HTB: Resolución de la máquina Mischief"
 date: 2022-10-14 19:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [insane,snmp,ipv6,iptables, icmp exfiltration]     ## TAG names should always be lowercase

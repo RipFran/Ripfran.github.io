@@ -1,5 +1,5 @@
 ---
-title: UpDown WriteUp
+title: "HTB: Resolución de la máquina Updown"
 date: 2023-01-21 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [git logs, php, disable_funcions bypass,suid,sudoers]     ## TAG names should always be lowercase

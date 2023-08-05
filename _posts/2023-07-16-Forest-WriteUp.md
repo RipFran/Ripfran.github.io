@@ -1,5 +1,5 @@
 ---
-title: Forest WriteUp
+title: "HTB: Resolución de la máquina Forest"
 date: 2023-07-16 16:00:00 +/-TTTT
 categories: [HTB, Active Directory]
 tags: [asreproasting, bloodhound, dcsync, pass the hash, crackmapexec, smbclient, smbmap, rpcclient, getnpusers.py, kerbrute, john, evil-winrm, account operators, sharphound.exe, genericall, writedacl]     ## TAG names should always be lowercase
