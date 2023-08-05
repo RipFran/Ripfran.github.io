@@ -17,6 +17,10 @@
   <meta name="robots" content="noindex">
   {% endif %}
 
+  {% if page.layout == "category" %}
+  <meta name="robots" content="noindex">
+  {% endif %}
+
   {% if page.image %}
   {% assign img = page.image.path | default: page.image %}
 

@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Soccer"
+title: "HTB: Resolución de Soccer"
 date: 2023-01-02 19:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [webshell,php,websockets,sqli blind, htb]     ## TAG names should always be lowercase

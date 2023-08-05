@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Blackfield"
+title: "HTB: Resolución de Blackfield"
 date: 2023-07-26 00:00:00 +/-TTTT
 categories: [HTB, Active Directory]
 tags: [asreproasting, bloodhound, lsass, sebackupprivilege, forcechangepassword, pypykatz, ntds, nmap, crackmapexec, smbmap, guest session, kerbrute, getnpusers.py, john, evil-winrm, rpc, bloodhound-python, montura smb, backup operators, diskshadow, secretsdump.py, efs, cipher, sam]     # TAG names should always be lowercase

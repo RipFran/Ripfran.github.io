@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina RedPanda"
+title: "HTB: Resolución de RedPanda"
 date: 2022-09-26 19:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [java ssti,xxe]     ## TAG names should always be lowercase

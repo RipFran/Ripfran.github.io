@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Reel"
+title: "HTB: Resolución de Reel"
 date: 2023-08-02 00:00:00 +/-TTTT
 categories: [HTB, Active Directory]
 tags: [ftp, smtp, exiftool, cve-2017-0199, phising, rtf, hta, smbserver, msfvenom, swaks, acl, pscredential, writeowner, writedacl]     # TAG names should always be lowercase

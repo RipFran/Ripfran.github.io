@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Photobomb"
+title: "HTB: Resolución de Photobomb"
 date: 2023-02-11 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [command injection, sudoers, path hijacking]     ## TAG names should always be lowercase

@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Active"
+title: "HTB: Resolución de Active"
 date: 2023-07-20 12:00:00 +/-TTTT
 categories: [HTB, Active Directory]
 tags: [kerberoasting, gpp-password, gpp-decrypt, crackmapexec, smbmap, smbclient, getuserspns.py, john, wmiexec.py]     ## TAG names should always be lowercase

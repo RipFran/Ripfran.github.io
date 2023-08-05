@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Ambassador"
+title: "HTB: Resolución de Ambassador"
 date: 2023-01-28 06:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [consul,git,grafana,sqlite]     ## TAG names should always be lowercase

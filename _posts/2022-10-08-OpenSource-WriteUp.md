@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina OpenSource"
+title: "HTB: Resolución de OpenSource"
 date: 2022-10-08 19:00:00 +/-TTTT
 categories: [HTB, Linux]
 tags: [python,gitea,git hooks, werkzeug, lfi]     ## TAG names should always be lowercase

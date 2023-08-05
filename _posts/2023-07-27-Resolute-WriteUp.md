@@ -1,5 +1,5 @@
 ---
-title: "HTB: Resolución de la máquina Resolute"
+title: "HTB: Resolución de Resolute"
 date: 2023-07-27 12:00:00 +/-TTTT
 categories: [HTB, Active Directory]
 tags: [password spraying, rpc, guest session, evil-winrm, dnsadmins, ntds, msfvenom, dnscmd, smbserver, crackmapexec, smbclient, smbmap, rpcclient, nmap, kerbrute]     # TAG names should always be lowercase
