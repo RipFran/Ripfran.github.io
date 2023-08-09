@@ -52,6 +52,30 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
     </tr>
     <tr>
       <td>2</td>
+      <td><a href="https://twitter.com/gatogamer1155">@gatogamer1155</a></td>
+      <td>3</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><a href="https://twitter.com/aolle99">@aolle99</a></td>
+      <td>3</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><a href="https://twitter.com/bepernapat">@bepernapat</a></td>
+      <td>3</td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <td>5</td>
       <td><a href="https://twitter.com/kappa_rl">@kappa_rl</a></td>
       <td>2</td>
       <td>0</td>
@@ -59,15 +83,15 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
       <td>2</td>
     </tr>
     <tr>
-      <td>3</td>
-      <td><a href="https://twitter.com/gatogamer1155">@gatogamer1155</a></td>
+      <td>6</td>
+      <td><a href="https://twitter.com/ruycr4ft">@ruycr4ft</a></td>
       <td>2</td>
-      <td>1</td>
       <td>0</td>
       <td>1</td>
+      <td>2</td>
     </tr>
     <tr>
-      <td>4</td>
+      <td>7</td>
       <td><a href="https://twitter.com/xl4nder">@xl4nder</a></td>
       <td>2</td>
       <td>1</td>
@@ -75,57 +99,39 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
       <td>1</td>
     </tr>
     <tr>
-      <td>5</td>
-      <td><a href="https://twitter.com/ruycr4ft">@ruycr4ft</a></td>
-      <td>2</td>
-      <td>1</td>
-      <td>0</td>
-      <td>1</td>
-    </tr>
-    
-    <tr>
-      <td>6</td>
-      <td><a href="https://twitter.com/aolle99">@aolle99</a></td>
-      <td>2</td>
-      <td>1</td>
-      <td>0</td>
-      <td>1</td>
-    </tr>
-    <tr>
-      <td>7</td>
-      <td><a href="https://twitter.com/bepernapat">@bepernapat</a></td>
-      <td>2</td>
-      <td>1</td>
-      <td>0</td>
-      <td>1</td>
-    </tr>
-     <tr>
       <td>8</td>
-      <td>Criiis</td>
+      <td><a href="https://twitter.com/_c4rta_">@_c4rta_</a></td>
       <td>1</td>
       <td>0</td>
       <td>2</td>
       <td>1</td>
     </tr>
-
     <tr>
       <td>9</td>
-      <td><a href="https://twitter.com/orioljariod">@orioljariod</a></td>
-      <td>1</td>
+      <td>Criiis</td>
       <td>0</td>
-      <td>2</td>
-      <td>1</td>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
     </tr>
     <tr>
       <td>10</td>
-      <td><a href="https://twitter.com/vitolopaoloo">@vitolopaoloo</a></td>
+      <td><a href="https://twitter.com/orioljariod">@orioljariod</a></td>
       <td>0</td>
-      <td>1</td>
-      <td>2</td>
+      <td>0</td>
+      <td>3</td>
       <td>0</td>
     </tr>
-        <tr>
+    <tr>
       <td>11</td>
+      <td><a href="https://twitter.com/vitolopaoloo">@vitolopaoloo</a></td>
+      <td>0</td>
+      <td>0</td>
+      <td>3</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>12</td>
       <td><a href="https://twitter.com/stormblesssedd">@stormblesssedd</a></td>
       <td>0</td>
       <td>1</td>
