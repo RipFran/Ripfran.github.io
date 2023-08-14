@@ -44,49 +44,49 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
     <tr>
       <td>1</td>
       <td><a href="https://twitter.com/aolle99">@aolle99</a></td>
-      <td>7</td>
+      <td>8</td>
       <td>0</td>
       <td>0</td>
-      <td>7</td>
+      <td>8</td>
     </tr>
     <tr>
       <td>2</td>
-      <td><a href="https://twitter.com/bepernapat">@bepernapat</a></td>
-      <td>7</td>
-      <td>0</td>
-      <td>0</td>
-      <td>7</td>
-    </tr>
-    <tr>
-      <td>3</td>
       <td><a href="https://twitter.com/t1rantt">@t1rantt</a></td>
       <td>6</td>
       <td>0</td>
-      <td>1</td>
+      <td>2</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><a href="https://twitter.com/gatogamer1155">@gatogamer1155</a></td>
+      <td>6</td>
+      <td>0</td>
+      <td>2</td>
       <td>6</td>
     </tr>
     <tr>
       <td>4</td>
-      <td><a href="https://twitter.com/gatogamer1155">@gatogamer1155</a></td>
-      <td>6</td>
-      <td>0</td>
-      <td>1</td>
-      <td>6</td>
-    </tr>
-     <tr>
-      <td>5</td>
       <td><a href="https://twitter.com/_c4rta_">@_c4rta_</a></td>
-      <td>5</td>
+      <td>6</td>
       <td>0</td>
       <td>2</td>
+      <td>6</td>
+    </tr>
+    <tr>
       <td>5</td>
+      <td><a href="https://twitter.com/bepernapat">@bepernapat</a></td>
+      <td>7</td>
+      <td>1</td>
+      <td>0</td>
+      <td>6</td>
     </tr>
     <tr>
       <td>6</td>
       <td><a href="https://twitter.com/ruycr4ft">@ruycr4ft</a></td>
       <td>3</td>
       <td>0</td>
-      <td>4</td>
+      <td>5</td>
       <td>3</td>
     </tr>
     <tr>
@@ -94,23 +94,23 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
       <td><a href="https://twitter.com/kappa_rl">@kappa_rl</a></td>
       <td>2</td>
       <td>0</td>
-      <td>5</td>
+      <td>6</td>
       <td>2</td>
     </tr>
     <tr>
       <td>8</td>
       <td><a href="https://twitter.com/xl4nder">@xl4nder</a></td>
-      <td>4</td>
+      <td>5</td>
       <td>3</td>
       <td>0</td>
-      <td>1</td>
+      <td>2</td>
     </tr>
     <tr>
       <td>9</td>
       <td>Criiis</td>
       <td>0</td>
       <td>0</td>
-      <td>7</td>
+      <td>8</td>
       <td>0</td>
     </tr>
     <tr>
@@ -118,7 +118,7 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
       <td><a href="https://twitter.com/orioljariod">@orioljariod</a></td>
       <td>0</td>
       <td>0</td>
-      <td>7</td>
+      <td>8</td>
       <td>0</td>
     </tr>
     <tr>
@@ -126,7 +126,7 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
       <td><a href="https://twitter.com/vitolopaoloo">@vitolopaoloo</a></td>
       <td>0</td>
       <td>0</td>
-      <td>7</td>
+      <td>8</td>
       <td>0</td>
     </tr>
     <tr>
@@ -134,7 +134,7 @@ Aunque no podemos ofrecer premios físicos, el ganador será coronado como "El R
       <td><a href="https://twitter.com/stormblesssedd">@stormblesssedd</a></td>
       <td>0</td>
       <td>1</td>
-      <td>6</td>
+      <td>7</td>
       <td>0</td>
     </tr>
   </tbody>
