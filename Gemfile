@@ -27,5 +27,3 @@ gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 #  gem "jekyll-sass-converter", "~> 2.0"
 #end
 gem "jekyll-sass-converter", "~> 2.1"
-
-gem 'google-protobuf', '3.25.2'
