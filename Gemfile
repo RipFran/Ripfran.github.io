@@ -1,6 +1,6 @@
 ruby '3.3.0'
 
-# frozen_string_literal: true
+## frozen_string_literal: true
 source "https://rubygems.org"
 
 gemspec
@@ -27,3 +27,5 @@ gem "http_parser.rb", "~> 0.6.0", :platforms => [:jruby]
 if RUBY_PLATFORM =~ /linux-musl/
   gem "jekyll-sass-converter", "~> 2.0"
 end
+
+gem 'google-protobuf', '3.25.2'
